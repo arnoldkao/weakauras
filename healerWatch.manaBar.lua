@@ -208,7 +208,10 @@ function(_, ...)
             if UnitInRange(unit) then
                 manaSum = manaSum + mana
                 numHealers = numHealers + 1
-                numDeadHealers = numDeadHealers + 1
+
+                if roster.deadHealers[unit] ~= nil then
+                    numDeadHealers = numDeadHealers + 1
+                end
             end
         end
     end
