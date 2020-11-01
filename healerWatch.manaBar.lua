@@ -109,7 +109,7 @@ end
 
 function aura_env.isGroupUnitId(unit)
     -- Return 'true' if the specified 'unit' is "player" or matches the string
-    -- value for a group member (e.g., "party2"), not including pets. 
+    -- value for a group member (e.g., "party2"), not including pets.
     -- Otherwise, return false.
 
     -- Applying this filter allows us to reduce the processing of redundant
@@ -154,7 +154,7 @@ function(event, unit)
     if not aura_env.isGroupUnitId(unit) then
         return
     end
-        
+
     aura_env:cacheHealerState(unit)
     WeakAuras.ScanEvents("WA_HEALERWATCH_UPDATE", event, unit)
 end
