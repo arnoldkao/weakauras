@@ -35,8 +35,8 @@ end
 
 function aura_env.cacheHealerState(self, unit)
     -- Save 'unit's mana into 'self.healerMana'.  If 'unit' is dead, save a
-    -- value of 0.  If 'unit' is dead and is not already in
-    -- 'self.deadHealers', insert 'unit' into 'self.deadHealers' and increment
+    -- value of 0.  If 'unit' is dead and is not already in 'self.deadHealers',
+    -- insert 'unit' into 'self.deadHealers' and increment
     -- 'self.numDeadHealers'.  If 'unit' is alive and still in
     -- 'self.deadHealers', remove 'unit' from 'self.deadHealers' and decrement
     -- 'self.numDeadHealers'.
@@ -131,9 +131,9 @@ function(event)
         if UnitGroupRolesAssigned(unit) == "HEALER" then
             aura_env.numHealers = aura_env.numHealers + 1
 
-            -- Default the healer's mana to 100%.  This should generally be
-            -- a safer assumed value than 0% for this event, since this event
-            -- is most likely to be fired while out of combat.
+            -- Default the healer's mana to 100%.  This should generally be a
+            -- safer assumed value than 0% for this event, since this event is
+            -- most likely to be fired while out of combat.
 
             aura_env.healerMana[UnitGUID(unit)] = 100
 
@@ -197,8 +197,8 @@ function(event, prefix, message, channel, sender)
         return
     end
 
-    -- As an extra precaution against message lag, drop this event if 'unit'
-    -- is dead or if we can query for 'unit's mana ourselves.
+    -- As an extra precaution against message lag, drop this event if 'unit' is
+    -- dead or if we can query for 'unit's mana ourselves.
 
     if UnitIsDeadOrGhost(unit)
     or Enum.PowerType.Mana == UnitPowerType(unit) then
