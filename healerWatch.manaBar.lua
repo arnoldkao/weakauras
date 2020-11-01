@@ -195,7 +195,7 @@ function(_, ...)
     if not UnitInBattleground("player") then
         -- We don't have to account for range.
 
-        for unit, mana in pairs(roster.healerMana) do
+        for _, mana in pairs(roster.healerMana) do
             manaSum = manaSum + mana
         end
 
