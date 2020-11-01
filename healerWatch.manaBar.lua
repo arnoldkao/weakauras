@@ -1,5 +1,4 @@
 --[[ TODO
-        - enable range detection in battlegrounds
         - is 'UNIT_POWER_FREQUENT' worth the performance cost?
         - would it be more efficient or otherwise better to retrieve mana values on each valid update event?
 ]]
@@ -7,6 +6,9 @@
 -- init
 C_ChatInfo.RegisterAddonMessagePrefix("HealerWatch_WA")
 aura_env.playerNameWithRealm = GetUnitName("player") .. '-' .. GetRealmName()
+
+-- A table of the values that directly dictate the display.
+aura_env.calculated = {}
 
 aura_env.roster = {}
 local roster = aura_env.roster
@@ -176,23 +178,47 @@ end
 
 -- trigger5: WA_HEALERWATCH_UPDATE
 function(_, ...)
-    -- TODO: Account for range if the player is in a battleground.
-
     -- print(...)
 
     local roster = aura_env.roster
 
     local manaSum = 0
+    local numHealers = 0
+    local numDeadHealers = 0
 
-    for _, mana in pairs(roster.healerMana) do
-        manaSum = manaSum + mana
+    if not UnitInBattleground("player") then
+        -- We don't have to account for range.
+
+        for unit, mana in pairs(roster.healerMana) do
+            manaSum = manaSum + mana
+        end
+
+        numHealers = roster.numHealers or 0
+        numDeadHealers = roster.numDeadHealers or 0
+    else
+        -- Account for range.
+
+        for unit, mana in pairs(roster.healerMana) do
+            if UnitInRange(unit) then
+                manaSum = manaSum + mana
+                numHealers = numHealers + 1
+                numDeadHealers = numDeadHealers + 1
+            end
+        end
     end
+
+    -- Save the values into 'aura_env.calculated'.
+
+    local calculated = aura_env.calculated
 
     if manaSum == 0 then
-        aura_env.manaAverage = 0
+        calculated.manaAverage = 0
     else
-        aura_env.manaAverage = manaSum / roster.numHealers
+        calculated.manaAverage = manaSum / numHealers
     end
+
+    calculated.numHealers = numHealers
+    calculated.numDeadHealers = numDeadHealers
 
     return true
 end
@@ -204,16 +230,16 @@ end
 
 -- duration
 function()
-    return aura_env.manaAverage, 100, true
+    return aura_env.calculated.manaAverage, 100, true
 end
 
 -- overlay
 function()
-    local roster = aura_env.roster
+    local calculated = aura_env.calculated
 
-    if roster.numHealers == nil or roster.numHealers == 0 then
+    if calculated.numHealers == 0 then
         return 0, 100
     end
 
-    return 100 - ((roster.numDeadHealers / roster.numHealers) * 100), 100
+    return (1 - calculated.numDeadHealers / calculated.numHealers) * 100, 100
 end
