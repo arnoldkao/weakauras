@@ -3,6 +3,7 @@
         - would it be more efficient or otherwise better to retrieve mana values on each valid update event?
 ]]
 
+-------------------------------------------------------------------------------
 -- init
 C_ChatInfo.RegisterAddonMessagePrefix("HealerWatch_WA")
 aura_env.playerNameWithRealm = GetUnitName("player") .. '-' .. GetRealmName()
@@ -68,6 +69,7 @@ function aura_env.canAccessUnitMana(unit)
     return Enum.PowerType.Mana == UnitPowerType(unit) or unit == "player"
 end
 
+-------------------------------------------------------------------------------
 -- trigger1: PLAYER_ROLES_ASSIGNED
 function(event)
     -- Determine which unit IDs in the group are healers.  Save them into
@@ -99,6 +101,7 @@ function(event)
     WeakAuras.ScanEvents("WA_HEALERWATCH_UPDATE", event)
 end
 
+-------------------------------------------------------------------------------
 -- trigger2: UNIT_POWER_UPDATE
 function(event, unit)
     if aura_env.roster.healerMana[unit] == nil
@@ -110,6 +113,7 @@ function(event, unit)
     WeakAuras.ScanEvents("WA_HEALERWATCH_UPDATE", event, unit)
 end
 
+-------------------------------------------------------------------------------
 -- trigger3: UNIT_HEALTH
 function(event, unit)
     -- Note that we trigger on 'UNIT_HEALTH' because that's the easiest way to
@@ -124,6 +128,7 @@ function(event, unit)
     WeakAuras.ScanEvents("WA_HEALERWATCH_UPDATE", event, unit)
 end
 
+-------------------------------------------------------------------------------
 -- trigger4: CHAT_MSG_ADDON
 function(event, prefix, message, channel, sender)
     local roster = aura_env.roster
@@ -176,6 +181,7 @@ function(event, prefix, message, channel, sender)
     WeakAuras.ScanEvents("WA_HEALERWATCH_UPDATE", event, sender)
 end
 
+-------------------------------------------------------------------------------
 -- trigger5: WA_HEALERWATCH_UPDATE
 function(_, ...)
     -- print(...)
@@ -223,17 +229,20 @@ function(_, ...)
     return true
 end
 
--- untrigger
+-------------------------------------------------------------------------------
+-- trigger5: untrigger
 function()
     return false
 end
 
--- duration
+-------------------------------------------------------------------------------
+-- trigger5: duration
 function()
     return aura_env.calculated.manaAverage, 100, true
 end
 
--- overlay
+-------------------------------------------------------------------------------
+-- trigger5: overlay
 function()
     local calculated = aura_env.calculated
 
