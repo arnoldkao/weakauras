@@ -1,11 +1,5 @@
 --[[ TODO
         - enable range detection in battlegrounds
-            - change roster to key off group unit ID so that "WA_HEALERWATCH_UPDATE" event handler can check if unit is in range
-                - "PLAYER_ROLES_ASSIGNED" event handler iterates through group unit IDs, so use that as the key
-                - handlers for other events will check if the event unit ID exists as a key in the roster
-                    - if it isn't, ignore the event
-                        - this helps deduplicate events
-                        - this also replaces the check on whether the event unit ID is a healer
         - is 'UNIT_POWER_FREQUENT' worth the performance cost?
         - would it be more efficient or otherwise better to retrieve mana values on each valid update event?
 ]]
@@ -17,16 +11,15 @@ aura_env.playerNameWithRealm = GetUnitName("player") .. '-' .. GetRealmName()
 function aura_env.resetRoster(self)
     -- Reset the 'aura_env' state.
 
-    -- Note that we use unit GUID as keys to deduplicate units (e.g., between
-    -- 'party1' and 'target').
-
-    -- A dictionary that maps from unit GUID to a mana value.
+    -- A dictionary that maps from healer unit ID to a mana value.  The unit
+    -- IDs are strictly limited to those returned by 'WA_IterateGroupMembers'.
     self.healerMana = {}
 
     -- The number of entries in 'self.healerMana'.
     self.numHealers = 0
 
-    -- A set of unit GUIDs for dead healers in the group.
+    -- A set of unit IDs for dead healers in the group.  The set of unit IDs is
+    -- strictly a subset of those in 'self.healerMana'.
     self.deadHealers = {}
 
     -- The number of entries in 'self.deadHealers'.
@@ -41,13 +34,11 @@ function aura_env.cacheHealerState(self, unit)
     -- 'self.deadHealers', remove 'unit' from 'self.deadHealers' and decrement
     -- 'self.numDeadHealers'.
 
-    local unitGuid = UnitGUID(unit)
-
     if UnitIsDeadOrGhost(unit) then
-        self.healerMana[unitGuid] = 0
+        self.healerMana[unit] = 0
 
-        if self.deadHealers[unitGuid] == nil then
-            self.deadHealers[unitGuid] = true
+        if self.deadHealers[unit] == nil then
+            self.deadHealers[unit] = true
             self.numDeadHealers = self.numDeadHealers + 1
         end
     else
@@ -55,69 +46,21 @@ function aura_env.cacheHealerState(self, unit)
             local mana = (100 * UnitPower(unit, Enum.PowerType.Mana)
                               / UnitPowerMax(unit, Enum.PowerType.Mana))
 
-            self.healerMana[unitGuid] = mana
+            self.healerMana[unit] = mana
         end
 
-        if self.deadHealers[unitGuid] ~= nil then
-            self.deadHealers[unitGuid] = nil
+        if self.deadHealers[unit] ~= nil then
+            self.deadHealers[unit] = nil
             self.numDeadHealers = aura_env.numDeadHealers - 1
         end
     end
-end
-
-function aura_env.getHealerUnitIdFromName(fullUnitName)
-    -- Return the unit ID for the specified 'fullUnitName' if he/she is a
-    -- healer in our group.  Otherwise, return 'nil'.  'fullUnitName' must
-    -- include the player's realm name.
-
-    -- Ignore the unit if he/she is not in our group.
-
-    local unit
-    for groupUnit in WA_IterateGroupMembers() do
-        local name, realm = UnitName(groupUnit)
-
-        if realm == nil then
-            realm = GetRealmName()
-        end
-
-        if (name .. "-" .. realm) == fullUnitName then
-            unit = groupUnit
-            break
-        end
-    end
-
-    if unit == nil then
-        return nil
-    end
-
-    -- Ignore the unit if he/she is not a healer.
-
-    if UnitGroupRolesAssigned(unit) ~= "HEALER" then
-        return nil
-    end
-
-    return unit
 end
 
 function aura_env.canAccessUnitMana(unit)
     -- Return 'true' if we can query for 'unit's mana.  Otherwise, return
     -- 'false'.
 
-    return (Enum.PowerType.Mana == UnitPowerType(unit)
-            or UnitGUID(unit) == UnitGUID("player"))
-end
-
-function aura_env.isGroupUnitId(unit)
-    -- Return 'true' if the specified 'unit' is "player" or matches the string
-    -- value for a group member (e.g., "party2"), not including pets.
-    -- Otherwise, return false.
-
-    -- Applying this filter allows us to reduce the processing of redundant
-    -- events (e.g., "partyN" vs. "nameplateM").
-
-    return unit == "player"
-        or unit:find("party%d") == 0
-        or unit:find("raid%d") == 0
+    return Enum.PowerType.Mana == UnitPowerType(unit) or unit == "player"
 end
 
 -- trigger1: PLAYER_ROLES_ASSIGNED
@@ -134,8 +77,13 @@ function(event)
             -- Default the healer's mana to 100%.  This should generally be a
             -- safer assumed value than 0% for this event, since this event is
             -- most likely to be fired while out of combat.
+            --
+            -- This also guarantees that 'unit' is registered as a healer,
+            -- which must be done for lookups done by other event handlers.
+            -- (In other words, the implementation could change the default
+            -- mana value, but the mana value must not be 'nil'.)
 
-            aura_env.healerMana[UnitGUID(unit)] = 100
+            aura_env.healerMana[unit] = 100
 
             aura_env:cacheHealerState(unit)
         end
@@ -146,12 +94,8 @@ end
 
 -- trigger2: UNIT_POWER_UPDATE
 function(event, unit)
-    if UnitGroupRolesAssigned(unit) ~= "HEALER"
+    if aura_env.healerMana[unit] == nil
     or not aura_env.canAccessUnitMana(unit) then
-        return
-    end
-
-    if not aura_env.isGroupUnitId(unit) then
         return
     end
 
@@ -165,11 +109,7 @@ function(event, unit)
     -- tell if a unit has revived.  And, once we're listening for
     -- 'UNIT_HEALTH', we don't need a separate trigger to detect unit death.
 
-    if UnitGroupRolesAssigned(unit) ~= "HEALER" then
-        return
-    end
-
-    if not aura_env.isGroupUnitId(unit) then
+    if aura_env.healerMana[unit] == nil then
         return
     end
 
@@ -192,8 +132,26 @@ function(event, prefix, message, channel, sender)
         return
     end
 
-    local unit = aura_env.getHealerUnitIdFromName(sender)
+    -- Check if 'sender' is the name of a unit in 'aura_env.healerMana'.
+
+    local unit
+    for healerUnit, _ in pairs(self.healerMana) do
+        local name, realm = UnitName(healerUnit)
+
+        if realm == nil then
+            realm = GetRealmName()
+        end
+
+        if (name .. "-" .. realm) == fullUnitName then
+            unit = healerUnit
+            break
+        end
+    end
+
     if unit == nil then
+        -- 'sender' is not the name of a unit in 'aura_env.healerMana'.  Drop
+        -- this event.
+
         return
     end
 
@@ -201,11 +159,11 @@ function(event, prefix, message, channel, sender)
     -- dead or if we can query for 'unit's mana ourselves.
 
     if UnitIsDeadOrGhost(unit)
-    or Enum.PowerType.Mana == UnitPowerType(unit) then
+    or aura_env.canAccessUnitMana(unit) then
         return
     end
 
-    aura_env.healerMana[UnitGUID(unit)] = tonumber(message)
+    aura_env.healerMana[unit] = tonumber(message)
     WeakAuras.ScanEvents("WA_HEALERWATCH_UPDATE", event, sender)
 end
 
