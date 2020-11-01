@@ -252,3 +252,30 @@ function()
 
     return (1 - calculated.numDeadHealers / calculated.numHealers) * 100, 100
 end
+
+-------------------------------------------------------------------------------
+-- mana publisher custom text function
+function()
+    local now = GetTime()
+    if aura_env.lastTime ~= nil
+    and aura_env.lastTime + aura_env.config.period > now then
+        return ""
+    end
+    aura_env.lastTime = now
+
+    local targetChannel
+    if IsInGroup(LE_PARTY_CATEGORY_INSTANCE) then
+        targetChannel = "INSTANCE_CHAT"
+    elseif UnitInRaid("player") then
+        targetChannel = "RAID"
+    elseif UnitInParty("player") then
+        targetChannel = "PARTY"
+    else
+        return ""
+    end
+
+    local mana = UnitPower("player", 0) * 100 / UnitPowerMax("player", 0)
+    C_ChatInfo.SendAddonMessage("HealerWatch_WA", mana, targetChannel)
+
+    return ""
+end
