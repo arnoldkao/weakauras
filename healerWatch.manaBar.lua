@@ -8,50 +8,53 @@
 C_ChatInfo.RegisterAddonMessagePrefix("HealerWatch_WA")
 aura_env.playerNameWithRealm = GetUnitName("player") .. '-' .. GetRealmName()
 
+aura_env.roster = {}
+local roster = aura_env.roster
+
 function aura_env.resetRoster(self)
-    -- Reset the 'aura_env' state.
+    -- Reset the 'aura_env.roster' state.
 
     -- A dictionary that maps from healer unit ID to a mana value.  The unit
     -- IDs are strictly limited to those returned by 'WA_IterateGroupMembers'.
-    self.healerMana = {}
+    roster.healerMana = {}
 
-    -- The number of entries in 'self.healerMana'.
-    self.numHealers = 0
+    -- The number of entries in 'roster.healerMana'.
+    roster.numHealers = 0
 
     -- A set of unit IDs for dead healers in the group.  The set of unit IDs is
-    -- strictly a subset of those in 'self.healerMana'.
-    self.deadHealers = {}
+    -- strictly a subset of those in 'roster.healerMana'.
+    roster.deadHealers = {}
 
-    -- The number of entries in 'self.deadHealers'.
-    self.numDeadHealers = 0
+    -- The number of entries in 'roster.deadHealers'.
+    roster.numDeadHealers = 0
 end
 
 function aura_env.cacheHealerState(self, unit)
-    -- Save 'unit's mana into 'self.healerMana'.  If 'unit' is dead, save a
-    -- value of 0.  If 'unit' is dead and is not already in 'self.deadHealers',
-    -- insert 'unit' into 'self.deadHealers' and increment
-    -- 'self.numDeadHealers'.  If 'unit' is alive and still in
-    -- 'self.deadHealers', remove 'unit' from 'self.deadHealers' and decrement
-    -- 'self.numDeadHealers'.
+    -- Save 'unit's mana into 'roster.healerMana'.  If 'unit' is dead, save a
+    -- value of 0.  If 'unit' is dead and is not already in
+    -- 'roster.deadHealers', insert 'unit' into 'roster.deadHealers' and
+    -- increment 'roster.numDeadHealers'.  If 'unit' is alive and still in
+    -- 'roster.deadHealers', remove 'unit' from 'roster.deadHealers' and
+    -- decrement 'roster.numDeadHealers'.
 
     if UnitIsDeadOrGhost(unit) then
-        self.healerMana[unit] = 0
+        roster.healerMana[unit] = 0
 
-        if self.deadHealers[unit] == nil then
-            self.deadHealers[unit] = true
-            self.numDeadHealers = self.numDeadHealers + 1
+        if roster.deadHealers[unit] == nil then
+            roster.deadHealers[unit] = true
+            roster.numDeadHealers = roster.numDeadHealers + 1
         end
     else
         if self.canAccessUnitMana(unit) then
             local mana = (100 * UnitPower(unit, Enum.PowerType.Mana)
                               / UnitPowerMax(unit, Enum.PowerType.Mana))
 
-            self.healerMana[unit] = mana
+            roster.healerMana[unit] = mana
         end
 
-        if self.deadHealers[unit] ~= nil then
-            self.deadHealers[unit] = nil
-            self.numDeadHealers = aura_env.numDeadHealers - 1
+        if roster.deadHealers[unit] ~= nil then
+            roster.deadHealers[unit] = nil
+            roster.numDeadHealers = roster.numDeadHealers - 1
         end
     end
 end
@@ -66,13 +69,15 @@ end
 -- trigger1: PLAYER_ROLES_ASSIGNED
 function(event)
     -- Determine which unit IDs in the group are healers.  Save them into
-    -- 'aura_env.healerMana' and update 'aura_env.numHealers'.
+    -- 'aura_env.roster.healerMana' and update 'aura_env.roster.numHealers'.
+
+    local roster = aura_env.roster
 
     aura_env:resetRoster()
 
     for unit in WA_IterateGroupMembers() do
         if UnitGroupRolesAssigned(unit) == "HEALER" then
-            aura_env.numHealers = aura_env.numHealers + 1
+            roster.numHealers = roster.numHealers + 1
 
             -- Default the healer's mana to 100%.  This should generally be a
             -- safer assumed value than 0% for this event, since this event is
@@ -83,7 +88,7 @@ function(event)
             -- (In other words, the implementation could change the default
             -- mana value, but the mana value must not be 'nil'.)
 
-            aura_env.healerMana[unit] = 100
+            roster.healerMana[unit] = 100
 
             aura_env:cacheHealerState(unit)
         end
@@ -94,7 +99,7 @@ end
 
 -- trigger2: UNIT_POWER_UPDATE
 function(event, unit)
-    if aura_env.healerMana[unit] == nil
+    if aura_env.roster.healerMana[unit] == nil
     or not aura_env.canAccessUnitMana(unit) then
         return
     end
@@ -109,7 +114,7 @@ function(event, unit)
     -- tell if a unit has revived.  And, once we're listening for
     -- 'UNIT_HEALTH', we don't need a separate trigger to detect unit death.
 
-    if aura_env.healerMana[unit] == nil then
+    if aura_env.roster.healerMana[unit] == nil then
         return
     end
 
@@ -119,6 +124,8 @@ end
 
 -- trigger4: CHAT_MSG_ADDON
 function(event, prefix, message, channel, sender)
+    local roster = aura_env.roster
+
     -- Note that 'sender' seems always to include the realm name.
 
     if prefix ~= "HealerWatch_WA"
@@ -132,10 +139,10 @@ function(event, prefix, message, channel, sender)
         return
     end
 
-    -- Check if 'sender' is the name of a unit in 'aura_env.healerMana'.
+    -- Check if 'sender' is the name of a unit in 'roster.healerMana'.
 
     local unit
-    for healerUnit, _ in pairs(self.healerMana) do
+    for healerUnit, _ in pairs(roster.healerMana) do
         local name, realm = UnitName(healerUnit)
 
         if realm == nil then
@@ -149,7 +156,7 @@ function(event, prefix, message, channel, sender)
     end
 
     if unit == nil then
-        -- 'sender' is not the name of a unit in 'aura_env.healerMana'.  Drop
+        -- 'sender' is not the name of a unit in 'roster.healerMana'.  Drop
         -- this event.
 
         return
@@ -163,7 +170,7 @@ function(event, prefix, message, channel, sender)
         return
     end
 
-    aura_env.healerMana[unit] = tonumber(message)
+    roster.healerMana[unit] = tonumber(message)
     WeakAuras.ScanEvents("WA_HEALERWATCH_UPDATE", event, sender)
 end
 
@@ -173,16 +180,18 @@ function(_, ...)
 
     -- print(...)
 
+    local roster = aura_env.roster
+
     local manaSum = 0
 
-    for _, mana in pairs(aura_env.healerMana) do
+    for _, mana in pairs(roster.healerMana) do
         manaSum = manaSum + mana
     end
 
     if manaSum == 0 then
         aura_env.manaAverage = 0
     else
-        aura_env.manaAverage = manaSum / aura_env.numHealers
+        aura_env.manaAverage = manaSum / roster.numHealers
     end
 
     return true
@@ -200,9 +209,11 @@ end
 
 -- overlay
 function()
-    if aura_env.numHealers == nil or aura_env.numHealers == 0 then
+    local roster = aura_env.roster
+
+    if roster.numHealers == nil or roster.numHealers == 0 then
         return 0, 100
     end
 
-    return 100 - ((aura_env.numDeadHealers / aura_env.numHealers) * 100), 100
+    return 100 - ((roster.numDeadHealers / roster.numHealers) * 100), 100
 end
