@@ -131,8 +131,6 @@ end
 -------------------------------------------------------------------------------
 -- trigger4: CHAT_MSG_ADDON
 function(event, prefix, message, channel, sender)
-    local roster = aura_env.roster
-
     -- Note that 'sender' seems always to include the realm name.
 
     if prefix ~= "HealerWatch_WA"
@@ -148,6 +146,8 @@ function(event, prefix, message, channel, sender)
 
     -- Check if 'sender' is the name of a unit in 'roster.healerMana'.
 
+    local roster = aura_env.roster
+
     local unit
     for healerUnit, _ in pairs(roster.healerMana) do
         local name, realm = UnitName(healerUnit)
@@ -156,7 +156,7 @@ function(event, prefix, message, channel, sender)
             realm = GetRealmName()
         end
 
-        if (name .. "-" .. realm) == fullUnitName then
+        if (name .. "-" .. realm) == sender then
             unit = healerUnit
             break
         end
