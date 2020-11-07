@@ -69,6 +69,7 @@ aura_env.spells = {
     [102558] = false,   -- Incarnation: Guardian of Ursoc
     [203975] = false,   -- Earthwarden
     [5215] = false,     -- Prowl
+    [50334] = false,    -- Berserk
 
     -- Death Knight
     -- Notably missing Blooddrinker (channeled onto enemies)
@@ -119,6 +120,7 @@ aura_env.spells = {
     [5384] = false,     -- Feign Death
     [264735] = false,   -- Survival of the Fittest
     [281195] = false,   -- Survival of the Fittest
+    [199483] = false,   -- Camouflage
 
     -- Priest
     [33206] = false,    -- Pain Suppression
