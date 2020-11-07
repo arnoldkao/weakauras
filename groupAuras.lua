@@ -1,4 +1,6 @@
+-------------------------------------------------------------------------------
 -- init
+
 -- "Default" tracked auras, as a map from spell ID to a non-'nil' value.  This
 -- value is a "mine-only" boolean.  If the value is 'false' (or otherwise
 -- "falsey"), the aura will be tracked from all sources.  Otherwise, if the
@@ -165,7 +167,9 @@ end
 
 aura_env.unitAuras = {}
 
+-------------------------------------------------------------------------------
 -- trigger: UNIT_AURA
+
 function(allstates, event, unit)
     if unit == nil then
         return false
