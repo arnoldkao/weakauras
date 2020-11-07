@@ -103,6 +103,7 @@ function(event, ...)
         if spellId == 45181         -- Cheated Death
         or spellId == 87024         -- Cauterized
         or spellId == 209261        -- Uncontained Fel
+        or spellId == 123981        -- Perdition
         or spellId == 295047 then   -- Touch of the Everlasting
             aura_env.reportCauseOfDeath(unitGuid, unit)
         elseif spellId == 27827 then    -- Spirit of Redemption
