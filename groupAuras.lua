@@ -8,6 +8,7 @@
 aura_env.spells = {
     -- Racial
     [65116] = false,    -- Stoneform
+    [58984] = false,    -- Shadowmeld
 
     -- Trinkets
     [314585] = false,   -- Psychic Shell
@@ -24,15 +25,16 @@ aura_env.spells = {
     [280654] = false,   -- Normalization Decrease
 
     -- Monk
-    [215479] = false,   -- Ironskin Brew
+    -- Notably missing Breath of Fire and Exploding Keg (on enemies)
     [120954] = false,   -- Fortifying Brew
     [243435] = false,   -- Fortifying Brew
     [115176] = false,   -- Zen Meditation
     [122278] = false,   -- Dampen Harm
-    [115295] = false,   -- Guard
     [116849] = false,   -- Life Cocoon
     [122783] = false,   -- Diffuse Magic
     [125174] = false,   -- Touch of Karma
+    [261769] = false,   -- Inner Strength
+    [132578] = false,   -- Invoke Niuzo, the Black Ox
 
     -- Demon Hunter
     -- Notably missing Fiery Brand (on enemies)
@@ -41,30 +43,32 @@ aura_env.spells = {
     [203819] = false,   -- Demon Spikes
     [196555] = false,   -- Netherwalk
     [212800] = false,   -- Blur
-    [188499] = false,   -- Blade Dance
-    [210152] = false,   -- Death Sweep
     [209426] = false,   -- Darkness
 
     -- Warrior
-    -- Notably missing Demoralizing Shout (on enemies)
+    -- Notably missing Demoralizing Shout and Punish (on enemies)
     [132404] = false,   -- Shield Block
     [12975] = false,    -- Last Stand
     [871] = false,      -- Shield Wall
     [107574] = false,   -- Avatar
     [97463] = false,    -- Rallying Cry
     [18499] = false,    -- Berserker Rage
-    [23920] = false,    -- Spell Reflect
+    [23920] = false,    -- Spell Reflection
     [184364] = false,   -- Enraged Regeneration
-    [227744] = false,   -- Ravager
     [118038] = false,   -- Die by the Sword
+    [197690] = false,   -- Defensive Stance
+    [147833] = false,   -- Intervene
 
     -- Druid
+    -- Notably missing Pulverize and Tooth and Claw (on enemies)
     [192081] = false,   -- Ironfur
     [22842] = false,    -- Frenzied Regeneration
     [22812] = false,    -- Barkskin
     [61336] = false,    -- Survival Instincts
     [102342] = false,   -- Ironbark
     [102558] = false,   -- Incarnation: Guardian of Ursoc
+    [203975] = false,   -- Earthwarden
+    [5215] = false,     -- Prowl
 
     -- Death Knight
     -- Notably missing Blooddrinker (channeled onto enemies)
@@ -75,10 +79,12 @@ aura_env.spells = {
     [48792] = false,    -- Icebound Fortitude
     [194679] = false,   -- Rune Tap
     [194844] = false,   -- Bonestorm
+    [49039] = false,    -- Lichborne
+    [145629] = false,   -- Anti-Magic Zone
 
     -- Paladin
+    [280375] = false,   -- Redoubt
     [132403] = false,   -- Shield of the Righteous
-    [272979] = false,   -- Bulwark of Light
     [86659] = false,    -- Guardian of Ancient Kings
     [31850] = false,    -- Ardent Defender
     [31884] = false,    -- Avenging Wrath
@@ -89,7 +95,6 @@ aura_env.spells = {
     [6940] = false,     -- Blessing of Sacrifice
     [152262] = false,   -- Seraphim
     [205191] = false,   -- Eye for an Eye
-    [184662] = false,   -- Shield of Vengeance
     [498] = false,      -- Divine Protection
 
     -- Rogue
@@ -97,15 +102,23 @@ aura_env.spells = {
     [5277] = false,     -- Evasion
     [1966] = false,     -- Feint
     [31224] = false,    -- Cloak of Shadows
-    [199754] = false,   -- Riposte
+    [1784] = false,     -- Stealth
 
     -- Mage
+    -- Notably missing Mirror Image
     [45438] = false,    -- Ice Block
+    [32612] = false,    -- Invisibility
+    [342246] = false,   -- Alter Time
+    [235450] = false,   -- Prismatic Barrier
+    [11426] = false,    -- Ice Barrier (Increases armor with talent)
+    [110960] = false,   -- Greater Invisibility
+    [113862] = false,   -- Greater Invisibility (Damage Reduction)
 
     -- Hunter
     [186265] = false,   -- Aspect of the Turtle
     [5384] = false,     -- Feign Death
     [264735] = false,   -- Survival of the Fittest
+    [281195] = false,   -- Survival of the Fittest
 
     -- Priest
     [33206] = false,    -- Pain Suppression
@@ -115,14 +128,19 @@ aura_env.spells = {
     [47788] = false,    -- Guardian Spirit
     [47585] = false,    -- Dispersion
     [15286] = false,    -- Vampiric Embrace
+    [45242] = false,    -- Focused Will
+    [193065] = false,   -- Masochism
 
     -- Shaman
     [108271] = false,   -- Astral Shift
-    [98007] = false,    -- Spirit Link Totem
+    [325174] = false,   -- Spirit Link Totem
     [207498] = false,   -- Ancestral Protection
+    [108281] = false,   -- Ancestral Guidance
+    [207400] = false,   -- Ancestral Vigor
 
     -- Warlock
-    [104773] = false    -- Unending Resolve
+    [104773] = false,   -- Unending Resolve
+    [132413] = false    -- Shadow Bulwark
 }
 
 -- Selectively enable/disable the defaults and the spells added in Custom
