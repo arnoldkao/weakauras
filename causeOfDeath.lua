@@ -138,6 +138,12 @@ function(event, ...)
     end
 
     if subevent == "UNIT_DIED" then
+        if not UnitIsDeadOrGhost(unit) then
+            -- This unit is using Feign Death.  Ignore this event.
+
+            return
+        end
+
         if aura_env.ignoreUnitGuidDeath[unitGuid] ~= nil then
             aura_env.ignoreUnitGuidDeath[unitGuid] = nil
         else
