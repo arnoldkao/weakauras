@@ -44,12 +44,55 @@ aura_env.reportCauseOfDeath = function(unitGuid, unit)
     if unitHistory == nil or #unitHistory.events == 0 then
         deathReport = deathReport .. "\n  <<Unknown>>"
     else
+        -- Group events by spell ID.  Also record the spell school for each
+        -- spell.
+
+        local eventsBySpell = {}
+        local spellSchools = {}
+
         for i = 1, #unitHistory.events do
             local event = unitHistory.events[i]
-            deathReport = (
-                deathReport .. "\n  "
-                .. aura_env.getSpellText(event.spell, event.school) .. ": "
-                .. AbbreviateNumbers(event.amount))
+
+            local spellEvents = eventsBySpell[event.spell]
+            if spellEvents == nil then
+                spellEvents = {}
+                eventsBySpell[event.spell] = spellEvents
+
+                spellSchools[event.spell] = event.school
+            end
+
+            table.insert(spellEvents, event.amount)
+        end
+
+        for spell, events in pairs(eventsBySpell) do
+            deathReport = (deathReport .. "\n  "
+                          .. aura_env.getSpellText(spell, spellSchools[spell]))
+
+            local numEvents = #events
+
+            if numEvents == 1 then
+                deathReport = (deathReport .. ": "
+                                               .. AbbreviateNumbers(events[1]))
+            else
+                deathReport = deathReport .. " x" .. numEvents .. ": "
+
+                local spellEventsSum = 0
+                local spellEventsReport = ""
+                for i = 1, numEvents do
+                    local eventAmount = events[i]
+                    spellEventsSum = spellEventsSum + eventAmount
+
+                    if i ~= 1 then
+                        spellEventsReport = spellEventsReport .. ", "
+                    end
+
+                    spellEventsReport = (spellEventsReport
+                                             .. AbbreviateNumbers(eventAmount))
+                end
+
+                deathReport = (deathReport .. AbbreviateNumbers(spellEventsSum)
+                                           .. " (" .. spellEventsReport .. ")")
+            end
         end
 
         -- Clear the history.
