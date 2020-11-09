@@ -190,6 +190,6 @@ function(event, ...)
         -- Insert the damage event into the new damage history array.
 
         unitHistory.sum = unitHistory.sum + amount
-        table.insert(unitHistory.events, { amount = amount, spell = spell, school = nil })
+        table.insert(unitHistory.events, { amount = amount, spell = spell, school = school })
     end
 end
