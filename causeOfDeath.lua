@@ -1,4 +1,6 @@
+-------------------------------------------------------------------------------
 -- init
+
 aura_env.damageHistory = {}
 aura_env.ignoreUnitGuidDeath = {}
 
@@ -104,7 +106,9 @@ aura_env.reportCauseOfDeath = function(unitGuid, unit)
     print(deathReport)
 end
 
+-------------------------------------------------------------------------------
 -- trigger: WA_CAUSEOFDEATH_DEFERRED, CLEU:UNIT_DIED, CLEU:SPELL_AURA_APPLIED, CLEU:SWING_DAMAGE, CLEU:RANGE_DAMAGE, CLEU:SPELL_DAMAGE, CLEU:SPELL_PERIODIC_DAMAGE, CLEU:SPELL_BUILDING_DAMAGE, CLEU:ENVIRONMENTAL_DAMAGE, CLEU:SWING_INSTAKILL, CLEU:RANGE_INSTAKILL, CLEU:SPELL_INSTAKILL, CLEU:SPELL_PERIODIC_INSTAKILL, CLEU:SPELL_BUILDING_INSTAKILL, CLEU:ENVIRONMENTAL_INSTAKILL
+
 function(event, ...)
     -- Note that this function never triggers because we're not interested in
     -- displaying anything except by 'print'ing.
