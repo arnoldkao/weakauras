@@ -11,10 +11,12 @@ button:RegisterForClicks("LeftButtonDown", "RightButtonDown")
 button:SetAttribute("type1", "spell")
 button:SetAttribute("type2", "spell")
 button:SetAttribute("shift-type1", "spell")
+button:SetAttribute("shift-type2", "spell")
 
 button:SetAttribute("spell1", 315584)
-button:SetAttribute("spell2", 3408)
 button:SetAttribute("shift-spell1", 8679)
+button:SetAttribute("spell2", 3408)
+button:SetAttribute("shift-spell2", 5761)
 
 -- custom text
 function()
