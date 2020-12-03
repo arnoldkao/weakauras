@@ -22,7 +22,7 @@ function()
             if stack then
                 local itemId = GetContainerItemID(bag, slot);
                 if C_Item.IsAnimaItemByID(itemId) then
-                    if (quality == 2) and (id ~= 183727) then
+                    if (quality == 2) and (itemId ~= 183727) then
                         -- green, but not 'Resonance of Conflict'
 
                         animaInBags = animaInBags + 5 * stack
@@ -40,7 +40,7 @@ function()
                         animaInBags = animaInBags + 250 * stack
                     end
 
-                    if id == 183727 then
+                    if itemId == 183727 then
                         -- 'Resonance of Conflict'
 
                         animaInBags = animaInBags + 3 * stack
