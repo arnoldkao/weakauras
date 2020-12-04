@@ -12,6 +12,25 @@ aura_env.spells = {
     [65116] = false,    -- Stoneform
     [58984] = false,    -- Shadowmeld
 
+    -- Covenant Abilities
+    -- Notably missing:
+    --  - Sinful Brand (Demon Hunter, Venthyr)
+    --  - The Hunt (Demon Hunter, Night Fae)
+    --  - Adaptive Swarm (Druid, Necrolord); should count as a defensive only
+    --    if it's applied by a healer.
+    --  - Mirrors of Torment (Mage, Venthyr)
+    --  - Faeline Stomp (Monk, Night Fae)
+    -- TODO:
+    --  - Fodder to the Flame kill reward buff (Demon Hunter, Necrolord)
+    --  - Conqueror's Banner buff (Warrior, Necrolord)
+    [311648] = false,   -- Swarming Mist: Death Knight, Venthyr
+    [338018] = false,   -- Lone Protection: Druid (Guardian), Kyrian
+    [327037] = false,   -- Kindred Protection: Druid (Guardian), Kyrian
+    [327071] = false,   -- Kindred Focus: Druid (Resto), Kyrian
+    [325727] = false,   -- Adaptive Swarm: Druid, Necrolord
+    [310454] = false,   -- Weapons of Order: Monk, Kyrian
+    [328282] = false,   -- Blessing of Spring: Paladin, Night Fae
+
     -- Monk
     -- Notably missing Breath of Fire and Exploding Keg (on enemies)
     [120954] = false,   -- Fortifying Brew
