@@ -31,6 +31,27 @@ aura_env.spells = {
     [310454] = false,   -- Weapons of Order: Monk, Kyrian
     [328282] = false,   -- Blessing of Spring: Paladin, Night Fae
 
+    -- Kyrian Soulbinds
+    [330749] = false,   -- Phial of Patience: Pelagos
+    [328900] = false,   -- Let Go of the Past: Pelagos
+    [330752] = false,   -- Ascendant Phial: Kleia
+    -- [334067] = false,-- Mentorship: Kleia; probably too noisy
+    [337697] = false,   -- Resilient Plumage: Mikanikos
+
+    -- Necrolord Soulbinds
+    [323507] = false,   -- Volatile Solvent: Mechanical; Marileth
+    [323524] = false,   -- Ultimate Form: Marileth
+    [328210] = false,   -- Emeni's Magnificent Skin: Emeni
+    [326946] = false,   -- Heirmir's Arsenal: Ravenous Pendant; Heirmir
+
+    -- Night Fae Soulbinds
+    [320224] = false,   -- Podtender: Dreamweaver
+    [325613] = false,   -- Hold the Line: Korayn
+    [325612] = false,   -- Hold the Line: Korayn [I don't know which one it is]
+
+    -- Venthyr Soulbinds
+    [333089] = false,   -- Hold Your Ground: Draven
+
     -- Monk
     -- Notably missing Breath of Fire and Exploding Keg (on enemies)
     [120954] = false,   -- Fortifying Brew
