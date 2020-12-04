@@ -12,20 +12,6 @@ aura_env.spells = {
     [65116] = false,    -- Stoneform
     [58984] = false,    -- Shadowmeld
 
-    -- Trinkets
-    [314585] = false,   -- Psychic Shell
-
-    -- Azerite Essences
-    [298357] = false,   -- Lucid Dreams
-    [293019] = false,   -- Azeroth's Undying Gift
-    [310595] = false,   -- Vigilant Protector
-    [298168] = false,   -- Aegis of the Deep
-    [295746] = false,   -- Empowered Null Barrier
-
-    -- Azerite Traits
-    [271543] = false,   -- Ablative Shielding
-    [280654] = false,   -- Normalization Decrease
-
     -- Monk
     -- Notably missing Breath of Fire and Exploding Keg (on enemies)
     [120954] = false,   -- Fortifying Brew
