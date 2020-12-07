@@ -2,7 +2,8 @@
 -- init
 
 aura_env.damageHistory = {}
-aura_env.ignoreUnitGuidDeath = {}
+aura_env.ignoreUnitGuidDeath = {}       -- For priests' Spirit of Redemption
+aura_env.reportOnNextDamageEvent = {}   -- For Night Fae's Podtender
 
 aura_env.getSpellText = function(spell, school)
     -- Return a formatted string describing the specified 'spell' of the
@@ -38,7 +39,7 @@ end
 aura_env.reportCauseOfDeath = function(unitGuid, unit)
     -- Print a report for the cause of death for the specified 'unitGuid',
     -- which is also referred to by 'unit', and clear the damage taken history
-    -- for 'unitGuid'
+    -- for 'unitGuid'.
 
     local deathReport = "Cause of Death [" .. WA_ClassColorName(unit) .. "]:"
     local unitHistory = aura_env.damageHistory[unitGuid]
@@ -107,7 +108,7 @@ aura_env.reportCauseOfDeath = function(unitGuid, unit)
 end
 
 -------------------------------------------------------------------------------
--- trigger: WA_CAUSEOFDEATH_DEFERRED, CLEU:UNIT_DIED, CLEU:SPELL_AURA_APPLIED, CLEU:SWING_DAMAGE, CLEU:RANGE_DAMAGE, CLEU:SPELL_DAMAGE, CLEU:SPELL_PERIODIC_DAMAGE, CLEU:SPELL_BUILDING_DAMAGE, CLEU:ENVIRONMENTAL_DAMAGE, CLEU:SWING_INSTAKILL, CLEU:RANGE_INSTAKILL, CLEU:SPELL_INSTAKILL, CLEU:SPELL_PERIODIC_INSTAKILL, CLEU:SPELL_BUILDING_INSTAKILL, CLEU:ENVIRONMENTAL_INSTAKILL
+-- trigger: WA_CAUSEOFDEATH_DEFERRED, CLEU:UNIT_DIED, CLEU:SPELL_AURA_APPLIED, CLEU:SWING_DAMAGE, CLEU:RANGE_DAMAGE, CLEU:SPELL_DAMAGE, CLEU:SPELL_PERIODIC_DAMAGE, CLEU:SPELL_BUILDING_DAMAGE, CLEU:ENVIRONMENTAL_DAMAGE, CLEU:SWING_INSTAKILL, CLEU:RANGE_INSTAKILL, CLEU:SPELL_INSTAKILL, CLEU:SPELL_PERIODIC_INSTAKILL, CLEU:SPELL_BUILDING_INSTAKILL, CLEU:ENVIRONMENTAL_INSTAKILL, CLEU:SPELL_ABSORBED
 
 function(event, ...)
     -- Note that this function never triggers because we're not interested in
@@ -171,6 +172,39 @@ function(event, ...)
 
             aura_env.ignoreUnitGuidDeath[unitGuid] = true
         end
+    elseif subevent == "SPELL_ABSORBED" then
+        -- Check if this absorption is from Podtender.
+        --
+        -- We cannot rely on 'subevent' to indicate the position of the spell
+        -- ID for what absorbed the damage, so we deduce it with our own logic.
+        -- Here, we search for the second repetition of the receiving target's
+        -- GUID, skip the next three values (target name, flags, and raid
+        -- flags), and use the fourth next value as the absorbing spell ID.
+
+        -- We expect the repeated GUID to be at an index in the range,
+        -- '[12, 15]'.
+
+        local absorbSpell = nil
+        for argPos = 12, 15 do
+            local arg = select(argPos, ...)
+            if arg == unitGuid then
+                absorbSpell = select(argPos + 4, ...)
+                break
+            end
+        end
+
+        print(absorbSpell)
+
+        -- Ignore the event if the absorption is not from Podtender.
+
+        if absorbSpell ~= 320221 then
+            return
+        end
+
+        -- Wait for the next '_DAMAGE' event on this unit, then report the
+        -- death.
+
+        aura_env.reportOnNextDamageEvent[unitGuid] = true
     elseif subevent:find("_DAMAGE") ~= nil then
         -- Keep track of the damage taken by this group member.
 
@@ -218,6 +252,12 @@ function(event, ...)
 
             unitHistory.sum = sumAfterRemoval
             table.remove(unitHistory.events, 1)
+        end
+
+        if aura_env.reportOnNextDamageEvent[unitGuid] then
+            aura_env.reportOnNextDamageEvent[unitGuid] = nil
+
+            aura_env.reportCauseOfDeath(unitGuid, unit)
         end
     elseif subevent:find("_INSTAKILL") ~= nil then
         -- Replace the damage history table for this unit to contain just this
