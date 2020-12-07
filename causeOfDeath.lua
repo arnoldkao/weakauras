@@ -1,3 +1,10 @@
+-- TODO:
+-- - Count absorbed (and maybe blocked) damage.  This involves:
+--      1. checking '*_MISSED' subevents, and
+--      2. enhancing '*_DAMAGE' subevent processing to add the absorbed amount.
+--
+-- - Count damage done to 'Regenerating Wildseed' (during Podtender).
+
 -------------------------------------------------------------------------------
 -- init
 
