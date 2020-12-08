@@ -9,8 +9,7 @@
 -- init
 
 aura_env.damageHistory = {}
-aura_env.ignoreUnitGuidDeath = {}       -- For priests' Spirit of Redemption
-aura_env.reportOnNextDamageEvent = {}   -- For Night Fae's Podtender
+aura_env.ignoreUnitGuidDeath = {}   -- For priests' Spirit of Redemption
 
 aura_env.getSpellText = function(spell, school)
     -- Return a formatted string describing the specified 'spell' of the
@@ -200,18 +199,16 @@ function(event, ...)
             end
         end
 
-        print(absorbSpell)
-
         -- Ignore the event if the absorption is not from Podtender.
 
         if absorbSpell ~= 320221 then
             return
         end
 
-        -- Wait for the next '_DAMAGE' event on this unit, then report the
-        -- death.
+        -- The 'SPELL_ABSORBED' and '_DAMAGE' events arrive in an inconsistent
+        -- order.  Delay the report in case the '_DAMAGE' event comes later.
 
-        aura_env.reportOnNextDamageEvent[unitGuid] = true
+        C_Timer.After(1, function() WeakAuras.ScanEvents("WA_CAUSEOFDEATH_DEFERRED", unitGuid, unit) end)
     elseif subevent:find("_DAMAGE") ~= nil then
         -- Keep track of the damage taken by this group member.
 
@@ -259,12 +256,6 @@ function(event, ...)
 
             unitHistory.sum = sumAfterRemoval
             table.remove(unitHistory.events, 1)
-        end
-
-        if aura_env.reportOnNextDamageEvent[unitGuid] then
-            aura_env.reportOnNextDamageEvent[unitGuid] = nil
-
-            aura_env.reportCauseOfDeath(unitGuid, unit)
         end
     elseif subevent:find("_INSTAKILL") ~= nil then
         -- Replace the damage history table for this unit to contain just this
