@@ -117,6 +117,21 @@ aura_env.reportCauseOfDeath = function(unitGuid, unit)
     print(deathReport)
 end
 
+aura_env.spellIsRecentlyApplied = function(unit, spellId)
+    -- Return 'true' if the specified 'spellId' was recently applied to the
+    -- specified 'unit'.  Otherwise, return 'false'.
+
+    local name, _, _, _, duration, expirationTime = WA_GetUnitDebuff(unit,
+                                                                     spellId)
+
+    if name == nil then
+        _, _, _, _, duration, expirationTime = WA_GetUnitBuff(unit, spellId)
+    end
+
+    local applicationTime = expirationTime - duration
+    return applicationTime > GetTime() - 3
+end
+
 -------------------------------------------------------------------------------
 -- trigger: WA_CAUSEOFDEATH_DEFERRED, CLEU:UNIT_DIED, CLEU:SPELL_AURA_APPLIED, CLEU:SWING_DAMAGE, CLEU:RANGE_DAMAGE, CLEU:SPELL_DAMAGE, CLEU:SPELL_PERIODIC_DAMAGE, CLEU:SPELL_BUILDING_DAMAGE, CLEU:ENVIRONMENTAL_DAMAGE, CLEU:SWING_INSTAKILL, CLEU:RANGE_INSTAKILL, CLEU:SPELL_INSTAKILL, CLEU:SPELL_PERIODIC_INSTAKILL, CLEU:SPELL_BUILDING_INSTAKILL, CLEU:ENVIRONMENTAL_INSTAKILL, CLEU:SPELL_ABSORBED
 
@@ -169,8 +184,18 @@ function(event, ...)
         or spellId == 209261        -- Uncontained Fel
         or spellId == 123981        -- Perdition
         or spellId == 295047 then   -- Touch of the Everlasting
-            aura_env.reportCauseOfDeath(unitGuid, unit)
+            -- Ignore this event if the aura was not just applied.
+
+            if aura_env.spellIsRecentlyApplied(unit, spellId) then
+                aura_env.reportCauseOfDeath(unitGuid, unit)
+            end
         elseif spellId == 27827 then    -- Spirit of Redemption
+            -- Ignore this event if the aura was not just applied.
+
+            if not aura_env.spellIsRecentlyApplied(unit, spellId) then
+                return
+            end
+
             -- Delay the report by a second, since this aura is applied before
             -- the combat log reports the damage event that took the unit to 0
             -- health.
