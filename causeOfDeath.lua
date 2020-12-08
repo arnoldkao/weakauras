@@ -3,7 +3,11 @@
 --      1. checking '*_MISSED' subevents, and
 --      2. enhancing '*_DAMAGE' subevent processing to add the absorbed amount.
 --
--- - Count damage done to 'Regenerating Wildseed' (during Podtender).
+-- - Count damage done to 'Regenerating Wildseed' (NPC ID 164589) during
+--   Podtender.
+--
+-- - Add support for 'Forgeborn Reveries' (spell ID 326514) from Necrolords'
+--   Bonesmith Heirmir soulbind.
 
 -------------------------------------------------------------------------------
 -- init
