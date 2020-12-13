@@ -14,6 +14,7 @@
 
 aura_env.damageHistory = {}
 aura_env.ignoreUnitGuidDeath = {}   -- For priests' Spirit of Redemption
+aura_env.ignorePodtender = {}       -- For Night Fae's Podtender
 
 aura_env.getSpellText = function(spell, school)
     -- Return a formatted string describing the specified 'spell' of the
@@ -233,6 +234,18 @@ function(event, ...)
         if absorbSpell ~= 320221 then
             return
         end
+
+        -- Ignore the event if this player has already procced Podtender.
+
+        if aura_env.ignorePodtender[unitGuid] then
+            return
+        end
+
+        -- Ignore further Podtender absorptions on this player for the
+        -- remainder of its duration (plus some leeway time).
+
+        aura_env.ignorePodtender[unitGuid] = true
+        C_Timer.After(15, function() aura_env.ignorePodtender[unitGuid] = nil end)
 
         -- The 'SPELL_ABSORBED' and '_DAMAGE' events arrive in an inconsistent
         -- order.  Delay the report in case the '_DAMAGE' event comes later.
