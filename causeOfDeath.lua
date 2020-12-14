@@ -245,6 +245,7 @@ function(event, ...)
         -- remainder of its duration (plus some leeway time).
 
         aura_env.ignorePodtender[unitGuid] = true
+        local aura_env = aura_env
         C_Timer.After(15, function() aura_env.ignorePodtender[unitGuid] = nil end)
 
         -- The 'SPELL_ABSORBED' and '_DAMAGE' events arrive in an inconsistent
