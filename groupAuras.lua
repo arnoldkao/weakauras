@@ -12,6 +12,9 @@ aura_env.spells = {
     [65116] = false,    -- Stoneform
     [58984] = false,    -- Shadowmeld
 
+    -- Trinkets
+    [344916] = false,   -- Tuft of Smoldering Plumage
+
     -- Covenant Abilities
     -- Notably missing:
     --  - Sinful Brand (Demon Hunter, Venthyr)
