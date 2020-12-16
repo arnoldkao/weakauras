@@ -31,3 +31,37 @@ if _G[buttonName] == nil then
     button:SetScript("OnClick", buttonScript)
 end
 
+-------------------------------------------------------------------------------
+-- trigger: SOULBIND_ACTIVATED, WA_SOULBINDSTALENTWINDOWBUTTON_DEFERRED
+
+function()
+    return true
+end
+
+-------------------------------------------------------------------------------
+-- untrigger
+
+function()
+    return false
+end
+
+-------------------------------------------------------------------------------
+-- duration
+
+function(event)
+    local model = aura_env.region.model
+
+    if model == nil then
+        -- Schedule a retrigger on the next rendered frame, when 'model' is not
+        -- 'nil'.
+
+        C_Timer.After(0, function() WeakAuras.ScanEvents("WA_SOULBINDSTALENTWINDOWBUTTON_DEFERRED") end)
+        return
+    end
+
+    local soulbindId = C_Soulbinds.GetActiveSoulbindID()
+    local soulbindData = C_Soulbinds.GetSoulbindData(soulbindId)
+    local displayInfoId = soulbindData.modelSceneData.creatureDisplayInfoID
+
+    model:SetDisplayInfo(displayInfoId)
+end
