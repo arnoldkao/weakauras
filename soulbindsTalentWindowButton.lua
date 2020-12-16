@@ -10,19 +10,24 @@
 LoadAddOn("Blizzard_TalentUI")
 LoadAddOn("Blizzard_Soulbinds")
 
-local button = CreateFrame("Button",
-                           "WA_SoulbindsTalentWindowButton",
-                           aura_env.region,
-                           "SecureActionButtonTemplate")
+local buttonName = 'WA_SoulbindsTalentWindowButton'
 
-local buttonScript = function()
-    if SoulbindViewer:IsVisible() then
-        SoulbindViewer.CloseButton:Click()
-    else
-        SoulbindViewer:Open()
+if _G[buttonName] == nil then
+    local button = CreateFrame("Button",
+                               buttonName,
+                               aura_env.region,
+                               "SecureActionButtonTemplate")
+
+    local buttonScript = function()
+        if SoulbindViewer:IsVisible() then
+            SoulbindViewer.CloseButton:Click()
+        else
+            SoulbindViewer:Open()
+        end
     end
+
+    button:SetAllPoints()
+    button:RegisterForClicks("LeftButtonDown")
+    button:SetScript("OnClick", buttonScript)
 end
 
-button:SetAllPoints()
-button:RegisterForClicks("LeftButtonDown")
-button:SetScript("OnClick", buttonScript)
