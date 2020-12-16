@@ -1,9 +1,3 @@
---[[ TODO
-
-- Change button texture/text according to covenant/soulbind/traits/conduits
-
-]]--
-
 -------------------------------------------------------------------------------
 -- init
 
@@ -50,9 +44,8 @@ function(event)
 
     local soulbindId = C_Soulbinds.GetActiveSoulbindID()
     local soulbindData = C_Soulbinds.GetSoulbindData(soulbindId)
-    local displayInfoId = soulbindData.modelSceneData.creatureDisplayInfoID
 
-    model:SetDisplayInfo(displayInfoId)
+    model:SetDisplayInfo(soulbindData.modelSceneData.creatureDisplayInfoID)
 
     return true
 end
