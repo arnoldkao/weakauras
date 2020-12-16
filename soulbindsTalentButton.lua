@@ -21,7 +21,7 @@ if _G[buttonName] == nil then
     end
 
     button:SetAllPoints()
-    button:RegisterForClicks("LeftButtonDown")
+    button:RegisterForClicks("LeftButtonDown", "RightButtonDown")
     button:SetScript("OnClick", buttonScript)
 end
 
