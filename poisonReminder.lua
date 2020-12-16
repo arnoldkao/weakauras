@@ -1,8 +1,8 @@
 -- init
 local button = CreateFrame("Button",
-						   "WA_PoisonReminder",
-						   aura_env.region,
-						   "SecureActionButtonTemplate")
+                           "WA_PoisonReminder",
+                           aura_env.region,
+                           "SecureActionButtonTemplate")
 
 button:SetAllPoints()
 button:SetAttribute("unit","player")
