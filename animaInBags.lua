@@ -4,9 +4,16 @@ function()
 end
 
 --------------------------------------------------------------------------------
--- trigger1 (status): BAG_UPDATE_DELAYED
+-- trigger (status): BAG_UPDATE_DELAYED, CURRENCY_DISPLAY_UPDATE
 -- based on https://wago.io/d3T2l8gld/3
-function()
+function(event, ...)
+    if event == 'CURRENCY_DISPLAY_UPDATE' then
+        local currencyId, _ = ...
+        if currencyId ~= 1813 then
+            return true
+        end
+    end
+
     local animaAsCurrency = 0
     local currencyInfo = C_CurrencyInfo.GetCurrencyInfo(1813)
     if currencyInfo ~= nil then
@@ -58,26 +65,7 @@ function()
 end
 
 --------------------------------------------------------------------------------
--- trigger2 (event): CURRENCY_DISPLAY_UPDATE
-function(event, currencyId, newTotal)
-    if currencyId ~= 1813 then
-        -- Ignore this event.
-
-        return true
-    end
-
-    -- Assume that we're depositing it into the Sanctum Reservoir and that the
-    -- items are removed from our bags or about to be removed from our bags.
-
-    aura_env.animaInBags = 0
-    aura_env.animaAsCurrency = newTotal
-    aura_env.animaTotal = newTotal
-
-    return true
-end
-
---------------------------------------------------------------------------------
--- trigger name info (for both triggers 1 and 2)
+-- name info
 -- This is here to force a trigger update.
 function()
     return GetTime()
