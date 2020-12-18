@@ -140,6 +140,7 @@ aura_env.spells = {
     -- Notably missing Mirror Image
     [45438] = false,    -- Ice Block
     [32612] = false,    -- Invisibility
+    [110909] = false,   -- Alter Time
     [342246] = false,   -- Alter Time
     [235450] = false,   -- Prismatic Barrier
     [11426] = false,    -- Ice Barrier (Increases armor with talent)
