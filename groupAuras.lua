@@ -14,6 +14,8 @@ aura_env.spells = {
 
     -- Trinkets
     [344916] = false,   -- Tuft of Smoldering Plumage
+    [344384] = false,   -- Bargast's Leash (Target)
+    [344388] = false,   -- Bargast's Leash (Source)
 
     -- Covenant Abilities
     -- Notably missing:
