@@ -1,6 +1,7 @@
 -- init
-aura_env.sotfExpirationTime = 0     -- in fractional seconds since epoch
-aura_env.clockAdjustment = time() - GetTime()   -- add to local time to get unix time
+aura_env.sotfApplied = false
+aura_env.empoweredSpell = nil
+aura_env.empoweredCastTime = nil
 
 aura_env.trackedSpellIds = {
     [114108]=true,  -- Soul of the Forest
@@ -24,128 +25,117 @@ aura_env.getGroupUnitId = function(unitGuid)
     return nil
 end
 
--- trigger: CLEU:SPELL_AURA_APPLIED:SPELL_AURA_REFRESH:SPELL_AURA_REMOVED, PLAYER_DEAD
+-- trigger: CLEU:SPELL_AURA_APPLIED:SPELL_AURA_REFRESH:SPELL_AURA_REMOVED:SPELL_CAST_SUCCESS
 function(allstates, event)
-    if event == "COMBAT_LOG_EVENT_UNFILTERED" then
-        local timestamp, subevent, _, sourceGuid, _, _, _, destGuid, _, destFlags, _, spellId = CombatLogGetCurrentEventInfo()
+    local timestamp, subevent, _, sourceGuid, _, _, _, destGuid, _, destFlags, _, spellId = CombatLogGetCurrentEventInfo()
 
-        if sourceGuid ~= UnitGUID("player") then
-            return false
-        end
+    if sourceGuid ~= UnitGUID("player") then
+        return false
+    end
 
-        if not aura_env.trackedSpellIds[spellId] then
-            return false
-        end
+    if not aura_env.trackedSpellIds[spellId] then
+        return false
+    end
 
-        if bit.band(destFlags, COMBATLOG_OBJECT_TYPE_PLAYER) == 0
-        or bit.band(destFlags, COMBATLOG_OBJECT_AFFILIATION_OUTSIDER) ~= 0 then
-            return false
-        end
+    if bit.band(destFlags, COMBATLOG_OBJECT_TYPE_PLAYER) == 0
+    or bit.band(destFlags, COMBATLOG_OBJECT_AFFILIATION_OUTSIDER) ~= 0 then
+        return false
+    end
 
-        local destUnit = aura_env.getGroupUnitId(destGuid)
-        if destUnit == nil then
-            return false
-        end
+    local destUnit = aura_env.getGroupUnitId(destGuid)
+    if destUnit == nil then
+        return false
+    end
 
-        -- By this point, we're sure that this aura is applied by the player,
-        -- that the target is in the player's group, and that the aura is Soul
-        -- of the Forest or a HoT that may be empowered by Soul of the Forest.
+    -- By this point, we're sure that this aura is applied by the player, that
+    -- the target is in the player's group, and that the aura is Soul of the
+    -- Forest or a HoT that may be empowered by Soul of the Forest.
 
-        local stateKey = spellId .. destGuid
+    local stateKey = spellId .. destGuid
 
-        if subevent == "SPELL_AURA_APPLIED" and spellId == 197721 then
-            -- The player used Flourish.  Find all shown states in 'allstates'
-            -- and update their durations and expiration times.
+    if subevent == "SPELL_AURA_APPLIED" and spellId == 197721 then
+        -- The player used Flourish.  Find all shown states in 'allstates' and
+        -- update their durations and expiration times.
 
-            local changed = false
-            for _, state in pairs(allstates) do
-                if state.show == true then
-                    local _, _, _, _, duration, expirationTime = WA_GetUnitBuff(state.unit, state.spellId)
-                    if state.duration ~= duration then
-                        state.duration = duration
-                        state.expirationTime = expirationTime
-                        state.changed = true
+        local changed = false
+        for _, state in pairs(allstates) do
+            if state.show == true then
+                local _, _, _, _, duration, expirationTime = WA_GetUnitBuff(state.unit, state.spellId)
+                if state.duration ~= duration then
+                    state.duration = duration
+                    state.expirationTime = expirationTime
+                    state.changed = true
 
-                        changed = true
-                    end
+                    changed = true
                 end
             end
+        end
 
-            return changed
-        elseif subevent == "SPELL_AURA_APPLIED" or subevent == "SPELL_AURA_REFRESH" then
-            if spellId == 114108 then
-                aura_env.sotfExpirationTime = select(6, WA_GetUnitBuff(destUnit, spellId)) + aura_env.clockAdjustment
-                return false
-            end
-
-            local state = allstates[stateKey]
-            if aura_env.sotfExpirationTime > timestamp then
-                if state == nil then
-                    state = {}
-                    allstates[stateKey] = state
-                end
-
-                if spellId == 48438 then
-                    -- This is an empowered Wild Growth.  Change the
-                    -- expiration time on SOTF to some time less than one GCD
-                    -- from now so that all applications of Wild Growth are
-                    -- tracked in 'allstates'.
-
-                    aura_env.sotfExpirationTime = timestamp + 0.1
-                else
-                    aura_env.sotfExpirationTime = 0
-                end
-
-                state.changed = true
-                state.show = true
-                state.icon = select(3, GetSpellInfo(spellId))
-                state.spellId = spellId
-                state.unit = destUnit
-                state.progressType = "timed"
-                state.autoHide = true
-
-                local _, _, _, _, duration, expirationTime = WA_GetUnitBuff(destUnit, spellId)
-                state.duration = duration
-                state.expirationTime = expirationTime
-
-                return true
-            elseif state ~= nil then
-                state.changed = true
-                state.show = false
-
-                return true
-            else
-                return false
-            end
-        elseif subevent == "SPELL_AURA_REMOVED" then
-            if spellId == 114108 then
-                -- The SOTF aura is removed before the empowered spell is
-                -- applied, so we ignore the "SPELL_AURA_REMOVED" subevent for
-                -- the SOTF aura and instead rely on checking the expiration
-                -- time against the current time (as provided by the
-                -- 'timestamp' of each CLEU event).  Note that this results in
-                -- a display bug if the SOTF aura is removed by any means
-                -- other than consumption -- for example, by death or
-                -- '/cancelaura'.  The death case is covered by the
-                -- "PLAYER_DEAD" event.
-
-                return false
-            end
-
-            local state = allstates[stateKey]
-            if state ~= nil then
-                state.changed = true
-                state.show = false
-
-                return true
-            end
-
+        return changed
+    elseif subevent == "SPELL_AURA_APPLIED" or subevent == "SPELL_AURA_REFRESH" then
+        if spellId == 114108 then
+            aura_env.sotfApplied = true
             return false
+        end
+
+        if aura_env.sotfApplied then
+            aura_env.sotfApplied = false
+            aura_env.empoweredSpell = spellId
+            aura_env.empoweredCastTime = timestamp
+        end
+
+        local state = allstates[stateKey]
+        if aura_env.empoweredSpell == spellId
+        and aura_env.empoweredCastTime == timestamp then
+            if state == nil then
+                state = {}
+                allstates[stateKey] = state
+            end
+
+            state.changed = true
+            state.show = true
+            state.icon = select(3, GetSpellInfo(spellId))
+            state.spellId = spellId
+            state.unit = destUnit
+            state.progressType = "timed"
+            state.autoHide = true
+
+            local _, _, _, _, duration, expirationTime = WA_GetUnitBuff(destUnit, spellId)
+            state.duration = duration
+            state.expirationTime = expirationTime
+
+            return true
+        elseif state ~= nil then
+            state.changed = true
+            state.show = false
+
+            return true
         else
             return false
         end
-    elseif event == "PLAYER_DEAD" then
-        aura_env.sotfExpirationTime = 0
+    elseif subevent == "SPELL_AURA_REMOVED" then
+        if spellId == 114108 then
+            -- The SOTF aura is removed after the 'SPELL_CAST_SUCCESS' but
+            -- before the empowered 'SPELL_AURA_APPLIED' or
+            -- 'SPELL_AURA_REFRESH', so we've already set
+            -- 'aura_env.empoweredSpell' and 'aura_env.empoweredCastTime', and
+            -- it's safe to set 'aura_env.sotfApplied' to false.
+
+            aura_env.sotfApplied = false
+
+            return false
+        end
+
+        local state = allstates[stateKey]
+        if state ~= nil then
+            state.changed = true
+            state.show = false
+
+            return true
+        end
+
+        return false
+    else
         return false
     end
 end
