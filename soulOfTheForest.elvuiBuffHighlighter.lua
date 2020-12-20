@@ -24,16 +24,6 @@ aura_env.getGroupUnitId = function(unitGuid)
     return nil
 end
 
-aura_env.tracksState = function(frame)
-    -- Return 'true' if the specified ElvUI button 'frame' tracks
-    -- 'aura_env.state.spellId' from the player and is shown.  Otherwise,
-    -- return 'false'.
-
-    return frame:IsShown()
-        and frame.spellID == aura_env.state.spellId
-        and frame.caster == "player"
-end
-
 -- trigger: CLEU:SPELL_AURA_APPLIED:SPELL_AURA_REFRESH:SPELL_AURA_REMOVED, PLAYER_DEAD
 function(allstates, event)
     if event == "COMBAT_LOG_EVENT_UNFILTERED" then
@@ -166,9 +156,20 @@ function()
     -- "Buff" or as a "Buff Indicator".  If it's tracked as both, prefer the
     -- "Buff Indicator".
 
+    local tracksState = function(frame)
+        -- Return 'true' if the specified ElvUI button 'frame' tracks
+        -- 'aura_env.state.spellId' from the player and is shown.  Otherwise,
+        -- return 'false'.
+
+        return frame:IsShown()
+            and frame.spellID == aura_env.state.spellId
+            and frame.caster == "player"
+    end
+
+
     if aura_env.region
     and aura_env.region.anchor
-    and aura_env.tracksState(aura_env.region.anchor) then
+    and tracksState(aura_env.region.anchor) then
         return 0.5
     end
 
@@ -179,14 +180,14 @@ function()
 
     local buffIconFrame = nil
     for _,frame in ipairs(unitFrame.__owner.AuraWatch) do
-        if aura_env.tracksState(frame) then
+        if tracksState(frame) then
             buffIconFrame = frame
             break
         end
     end
     if buffIconFrame == nil then
         for _,frame in ipairs(unitFrame.__owner.Buffs) do
-            if aura_env.tracksState(frame) then
+            if tracksState(frame) then
                 buffIconFrame = frame
                 break
             end
