@@ -17,6 +17,11 @@ aura_env.spells = {
     [344384] = false,   -- Bargast's Leash (Target)
     [344388] = false,   -- Bargast's Leash (Source)
 
+    -- Dungeon Buffs
+    [342189] = false,   -- Stoneborn Boon (Halls of Atonement gargoyle)
+    [328737] = false,   -- Fragment of Radiance (Sanguine Depths 3rd boss orbs)
+    [335161] = false,   -- Anima Exhaust (Necrotic Wake orbs)
+
     -- Covenant Abilities
     -- Notably missing:
     --  - Sinful Brand (Demon Hunter, Venthyr)
