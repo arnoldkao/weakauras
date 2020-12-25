@@ -5,9 +5,9 @@ aura_env.buffs = {
     -- higher weight indicates a better buff.
 
     [193356] = 3,   -- Broadside
-    [193357] = 3,   -- Ruthless Precision
+    [193357] = 2,   -- Ruthless Precision
     [193358] = 1,   -- Grand Melee
-    [193359] = 2,   -- True Bearing
+    [193359] = 3,   -- True Bearing
     [199600] = 1,   -- Buried Treasure
     [199603] = 3    -- Skull and Crossbones
 }
