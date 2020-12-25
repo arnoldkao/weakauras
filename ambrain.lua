@@ -9,7 +9,7 @@ aura_env.buffs = {
     [193358] = 1,   -- Grand Melee
     [193359] = 3,   -- True Bearing
     [199600] = 1,   -- Buried Treasure
-    [199603] = 3    -- Skull and Crossbones
+    [199603] = 2    -- Skull and Crossbones
 }
 
 -- The minimum sum at which it's okay not to reroll.
