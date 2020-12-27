@@ -8,6 +8,8 @@
 --
 -- - Add support for 'Forgeborn Reveries' (spell ID 326514) from Necrolords'
 --   Bonesmith Heirmir soulbind.
+--
+-- - Add support for "Splintered Heart of Al'ar" trinket.
 
 -------------------------------------------------------------------------------
 -- init
@@ -45,6 +47,31 @@ aura_env.getSpellText = function(spell, school)
     end
 
     return text
+end
+
+aura_env.isWipe = function()
+    -- Return 'true' if too much of the raid is dead (the threshold for which
+    -- is configured in "Custom Options").  Otherwise, return 'false'.
+
+    local wipeThreshold = aura_env.config.wipeThreshold
+
+    if wipeThreshold == 0 then
+        -- The wipe threshold is disabled.
+
+        return false
+    end
+
+    -- Count the number of players dead.
+
+    local numDead = 0
+
+    for unit in WA_IterateGroupMembers() do
+        if UnitIsDeadOrGhost(unit) then
+            numDead = numDead + 1
+        end
+    end
+
+    return numDead >= wipeThreshold
 end
 
 aura_env.reportCauseOfDeath = function(unitGuid, unit)
@@ -173,7 +200,7 @@ function(event, ...)
 
         if aura_env.ignoreUnitGuidDeath[unitGuid] ~= nil then
             aura_env.ignoreUnitGuidDeath[unitGuid] = nil
-        else
+        elseif not aura_env.isWipe() then
             aura_env.reportCauseOfDeath(unitGuid, unit)
         end
     elseif subevent == "SPELL_AURA_APPLIED" then
@@ -187,13 +214,15 @@ function(event, ...)
         or spellId == 295047 then   -- Touch of the Everlasting
             -- Ignore this event if the aura was not just applied.
 
-            if aura_env.spellIsRecentlyApplied(unit, spellId) then
+            if aura_env.spellIsRecentlyApplied(unit, spellId)
+            and not aura_env.isWipe() then
                 aura_env.reportCauseOfDeath(unitGuid, unit)
             end
         elseif spellId == 27827 then    -- Spirit of Redemption
             -- Ignore this event if the aura was not just applied.
 
-            if not aura_env.spellIsRecentlyApplied(unit, spellId) then
+            if not aura_env.spellIsRecentlyApplied(unit, spellId)
+            or aura_env.isWipe() then
                 return
             end
 
