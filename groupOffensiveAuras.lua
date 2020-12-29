@@ -16,6 +16,21 @@ aura_env.spells = {
     [207771] = true     -- Fiery Brand
 }
 
+-- Selectively enable/disable the defaults and the spells added in Custom
+-- Options.
+
+if not aura_env.config.enableDefaults then
+    aura_env.spells = {}
+end
+
+if aura_env.config.enableAdded then
+    for _,spellOption in ipairs(aura_env.config.addedSpells) do
+        if spellOption.spellId ~= 0 then
+            aura_env.spells[spellOption.spellId] = true
+        end
+    end
+end
+
 local AuraTimerMixin = {
     SetDuration = function(self, value)
         self.duration = value
