@@ -16,30 +16,58 @@ aura_env.spells = {
     [207771] = true     -- Fiery Brand
 }
 
-aura_env.getTargetInfo = function(targets)
+local AuraTimerMixin = {
+    SetDuration = function(self, value)
+        self.duration = value
+    end,
+
+    SetExpirationTime = function(self, value)
+        self.expirationTime = value
+    end,
+
+    GetDuration = function(self)
+        return self.duration
+    end,
+
+    GetExpirationTime = function(self)
+        return self.expirationTime
+    end
+}
+
+aura_env.createAuraTimer = function(duration, expirationTime)
+    local auraTimer = CreateFromMixins(AuraTimerMixin)
+    auraTimer:SetDuration(duration)
+    auraTimer:SetExpirationTime(expirationTime)
+
+    return auraTimer
+end
+
+aura_env.getTargetsSummary = function(targets)
     -- Iterate through the specified 'targets' to return the number of entries
-    -- whose expiration time is not yet past and the max expiration time.
-    -- 'targets' must be a map from a unit identifier (e.g., unit GUID) to the
-    -- expiration time (as comparable to 'GetTime()') of a particular spell on
-    -- that unit.
+    -- whose expiration time is not yet past and the 'AuraTimer' object with
+    -- the max expiration time.  'targets' must be a map from a unit identifier
+    -- (e.g., unit GUID) to an 'AuraTimerMixin' object for a particular spell
+    -- on that unit.
 
     local count = 0
-    local maxExpirationTime = 0
+    local maxAuraTimer = nil
 
-    for unitGuid, expirationTime in pairs(targets) do
-        if expirationTime <= GetTime() then
+    for unitGuid, auraTimer in pairs(targets) do
+        if auraTimer:GetExpirationTime() <= GetTime() then
             -- Delete this entry from 'targets' for cleanliness.
 
             targets[unitGuid] = nil
         else
             count = count + 1
-            if expirationTime > maxExpirationTime  then
-                maxExpirationTime = expirationTime
+            if maxAuraTimer == nil
+            or auraTimer:GetExpirationTime() > maxAuraTimer:GetExpirationTime()
+                                                                           then
+                maxAuraTimer = auraTimer
             end
         end
     end
 
-    return count, maxExpirationTime
+    return count, maxAuraTimer
 end
 
 -------------------------------------------------------------------------------
@@ -101,11 +129,11 @@ function(allstates, event, unit)
                 -- on this particular target.
 
                 state.targets = {}
-                state.targets[targetGuid] = expirationTime
+                state.targets[targetGuid] = aura_env.createAuraTimer(duration, expirationTime)
             else
-                state.targets[targetGuid] = expirationTime
+                state.targets[targetGuid] = aura_env.createAuraTimer(duration, expirationTime)
 
-                local targetCount, maxExpirationTime = aura_env.getTargetInfo(state.targets)
+                local targetCount, maxAuraTimer = aura_env.getTargetsSummary(state.targets)
 
                 if state.targetCount ~= targetCount
                 or state.expirationTime ~= expirationTime then
@@ -114,7 +142,8 @@ function(allstates, event, unit)
                     changed = true
 
                     state.changed = true
-                    state.expirationTime = maxExpirationTime
+                    state.duration = maxAuraTimer:GetDuration()
+                    state.expirationTime = maxAuraTimer:GetExpirationTime()
 
                     state.targetCount = targetCount
                 end
@@ -132,12 +161,13 @@ function(allstates, event, unit)
         and state.targets[targetGuid] ~= nil then
             state.targets[targetGuid] = nil
 
-            local targetCount, maxExpirationTime = aura_env.getTargetInfo(state.targets)
+            local targetCount, maxAuraTimer = aura_env.getTargetsSummary(state.targets)
 
             changed = true
 
             state.changed = true
-            state.expirationTime = maxExpirationTime
+            state.duration = maxAuraTimer:GetDuration()
+            state.expirationTime = maxAuraTimer:GetExpirationTime()
 
             state.targetCount = targetCount
         end
