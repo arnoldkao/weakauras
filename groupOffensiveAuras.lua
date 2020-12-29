@@ -45,9 +45,9 @@ end
 aura_env.getTargetsSummary = function(targets)
     -- Iterate through the specified 'targets' to return the number of entries
     -- whose expiration time is not yet past and the 'AuraTimer' object with
-    -- the max expiration time.  'targets' must be a map from a unit identifier
-    -- (e.g., unit GUID) to an 'AuraTimerMixin' object for a particular spell
-    -- on that unit.
+    -- the max expiration time.  If 'targets' is empty, return 0 and 'nil'
+    -- instead.  'targets' must be a map from a unit identifier (e.g., unit
+    -- GUID) to an 'AuraTimerMixin' object for a particular spell on that unit.
 
     local count = 0
     local maxAuraTimer = nil
@@ -166,10 +166,15 @@ function(allstates, event, unit)
             changed = true
 
             state.changed = true
-            state.duration = maxAuraTimer:GetDuration()
-            state.expirationTime = maxAuraTimer:GetExpirationTime()
 
             state.targetCount = targetCount
+
+            if targetCount > 0 then
+                state.duration = maxAuraTimer:GetDuration()
+                state.expirationTime = maxAuraTimer:GetExpirationTime()
+            else
+                state.show = false
+            end
         end
     end
 
