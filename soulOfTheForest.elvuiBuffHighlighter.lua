@@ -1,4 +1,6 @@
+-------------------------------------------------------------------------------
 -- init
+
 aura_env.sotfApplied = false
 aura_env.empoweredSpell = nil
 aura_env.empoweredCastTime = nil
@@ -25,7 +27,9 @@ aura_env.getGroupUnitId = function(unitGuid)
     return nil
 end
 
--- trigger: CLEU:SPELL_AURA_APPLIED:SPELL_AURA_REFRESH:SPELL_AURA_REMOVED:SPELL_CAST_SUCCESS
+-------------------------------------------------------------------------------
+-- TSU: CLEU:SPELL_AURA_APPLIED:SPELL_AURA_REFRESH:SPELL_AURA_REMOVED:SPELL_CAST_SUCCESS
+
 function(allstates, event)
     local timestamp, subevent, _, sourceGuid, _, _, _, destGuid, _, destFlags, _, spellId = CombatLogGetCurrentEventInfo()
 
@@ -140,7 +144,9 @@ function(allstates, event)
     end
 end
 
+-------------------------------------------------------------------------------
 -- Animations -> Main -> Fade
+
 function()
     -- Get the ElvUI buff icon frame for this clone, whether it's tracked as a
     -- "Buff" or as a "Buff Indicator".  If it's tracked as both, prefer the
@@ -155,7 +161,6 @@ function()
             and frame.spellID == aura_env.state.spellId
             and frame.caster == "player"
     end
-
 
     if aura_env.region
     and aura_env.region.anchor
