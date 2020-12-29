@@ -71,12 +71,12 @@ aura_env.getTargetsSummary = function(targets)
 end
 
 -------------------------------------------------------------------------------
--- TSU: UNIT_AURA:nameplate
+-- TSU: UNIT_AURA:nameplate, NAME_PLATE_UNIT_ADDED
 
 function(allstates, event, unit)
-    -- Ignore events for friendly units.
+    -- Ignore events for nil and friendly units.
 
-    if UnitIsFriend("player", unit) then
+    if unit == nil or UnitIsFriend("player", unit) then
         return false
     end
 
