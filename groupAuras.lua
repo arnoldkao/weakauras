@@ -24,12 +24,9 @@ aura_env.spells = {
 
     -- Covenant Abilities
     -- Notably missing:
-    --  - Sinful Brand (Demon Hunter, Venthyr)
     --  - The Hunt (Demon Hunter, Night Fae)
     --  - Adaptive Swarm (Druid, Necrolord); should count as a defensive only
     --    if it's applied by a healer.
-    --  - Mirrors of Torment (Mage, Venthyr)
-    --  - Faeline Stomp (Monk, Night Fae)
     -- TODO:
     --  - Fodder to the Flame kill reward buff (Demon Hunter, Necrolord)
     --  - Conqueror's Banner buff (Warrior, Necrolord)
@@ -63,7 +60,6 @@ aura_env.spells = {
     [333089] = false,   -- Hold Your Ground: Draven
 
     -- Monk
-    -- Notably missing Breath of Fire and Exploding Keg (on enemies)
     [120954] = false,   -- Fortifying Brew
     [243435] = false,   -- Fortifying Brew
     [115176] = false,   -- Zen Meditation
@@ -75,7 +71,6 @@ aura_env.spells = {
     [132578] = false,   -- Invoke Niuzo, the Black Ox
 
     -- Demon Hunter
-    -- Notably missing Fiery Brand (on enemies)
     [187827] = false,   -- Metamorphosis
     [162264] = false,   -- Metamorphosis
     [203819] = false,   -- Demon Spikes
@@ -84,7 +79,6 @@ aura_env.spells = {
     [209426] = false,   -- Darkness
 
     -- Warrior
-    -- Notably missing Demoralizing Shout and Punish (on enemies)
     [132404] = false,   -- Shield Block
     [12975] = false,    -- Last Stand
     [871] = false,      -- Shield Wall
@@ -98,7 +92,6 @@ aura_env.spells = {
     [147833] = false,   -- Intervene
 
     -- Druid
-    -- Notably missing Pulverize and Tooth and Claw (on enemies)
     [192081] = false,   -- Ironfur
     [22842] = false,    -- Frenzied Regeneration
     [22812] = false,    -- Barkskin
@@ -110,7 +103,6 @@ aura_env.spells = {
     [50334] = false,    -- Berserk
 
     -- Death Knight
-    -- Notably missing Blooddrinker (channeled onto enemies)
     [195181] = false,   -- Bone Shield
     [48707] = false,    -- Anti-Magic Shell
     [81256] = false,    -- Dancing Rune Weapon

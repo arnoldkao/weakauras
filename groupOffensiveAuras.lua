@@ -10,10 +10,30 @@ Maybe TODO:
 -- "Default" tracked auras, as a map from spell ID to a non-'nil' value.
 
 aura_env.spells = {
-    [164812] = true,    -- Moonfire
+    -- Covenant Abilities
+    -- Notably missing:
+    --  - The Hunt (Demon Hunter, Night Fae)
+    --  - Mirrors of Torment (Mage, Venthyr)
+    --  - Faeline Stomp (Monk, Night Fae)
+    [317009] = true,    -- Sinful Brand (Demon Hunter, Venthyr)
+
+    -- Monk
+    [123725] = true,    -- Breath of Fire
+    [325153] = true,    -- Exploding Keg
 
     -- Demon Hunter
-    [207771] = true     -- Fiery Brand
+    [207771] = true,    -- Fiery Brand
+
+    -- Warrior
+    [1160] = true,      -- Demoralizing Shout
+    [275335] = true,    -- Punish
+
+    -- Druid
+    [80313] = true,     -- Pulverize
+    [135601] = true,    -- Tooth and Claw
+
+    -- Death Knight
+    [206931] = true,    -- Booddrinker
 }
 
 -- Selectively enable/disable the defaults and the spells added in Custom
