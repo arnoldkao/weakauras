@@ -71,81 +71,92 @@ aura_env.getTargetsSummary = function(targets)
 end
 
 -------------------------------------------------------------------------------
--- TSU: UNIT_AURA:nameplate, NAME_PLATE_UNIT_ADDED
+-- TSU: UNIT_AURA:nameplate, NAME_PLATE_UNIT_ADDED, CLEU:UNIT_DIED
 
-function(allstates, event, unit)
-    -- Ignore events for nil and friendly units.
-
-    if unit == nil or UnitIsFriend("player", unit) then
-        return false
-    end
-
-    local targetGuid = UnitGUID(unit)
-
-    -- Iterate through all debuffs on this unit.  Keep track of what the return
-    -- value should be and of what spell IDs we've found for this occurrence of
-    -- 'UNIT_AURA' for 'unit'.
+function(allstates, event, ...)
+    -- Keep track of what the return value should be and of what spell IDs
+    -- we've found for this event.
 
     local changed = false
     local seenSpellIds = {}
 
-    for i = 1, 40 do
-        local _, icon, _, _, duration, expirationTime, sourceUnit, _, _, spellId = UnitDebuff(unit, i)
+    local targetGuid = nil
 
-        if spellId == nil then
-            break
+    if event == "COMBAT_LOG_EVENT_UNFILTERED" then
+        -- Get the dead unit's GUID and skip ahead to remove it from all
+        -- states' target lists.
+
+        targetGuid = select(8, CombatLogGetCurrentEventInfo())
+    else
+        -- Ignore events for nil and friendly units.
+
+        local unit = ...
+        if unit == nil or UnitIsFriend("player", unit) then
+            return false
         end
 
-        if (UnitInParty(sourceUnit) or UnitInRaid(sourceUnit))
-        and aura_env.spells[spellId] ~= nil then
-            -- This spell is tracked, and it's applied by a unit in our group.
-            -- Ensure that there is an entry in 'allstates' for this spell from
-            -- this group member.
+        targetGuid = UnitGUID(unit)
 
-            local stateId = UnitGUID(sourceUnit) .. spellId
-            seenSpellIds[spellId] = true
+        -- Iterate through all debuffs on this unit.
 
-            local state = allstates[stateId]
+        for i = 1, 40 do
+            local _, icon, _, _, duration, expirationTime, sourceUnit, _, _, spellId = UnitDebuff(unit, i)
 
-            if state == nil then
-                state = {}
-                allstates[stateId] = state
+            if spellId == nil then
+                break
+            end
 
-                changed = true
+            if (UnitInParty(sourceUnit) or UnitInRaid(sourceUnit))
+            and aura_env.spells[spellId] ~= nil then
+                -- This spell is tracked, and it's applied by a unit in our
+                -- group.  Ensure that there is an entry in 'allstates' for
+                -- this spell from this group member.
 
-                state.changed = true
-                state.show = true
-                state.unit = sourceUnit
-                state.icon = icon
-                state.spellId = spellId
-                state.progressType = "timed"
-                state.autoHide = true
-                state.duration = duration
-                state.expirationTime = expirationTime
+                local stateId = UnitGUID(sourceUnit) .. spellId
+                seenSpellIds[spellId] = true
 
-                state.targetCount = 1
+                local state = allstates[stateId]
 
-                -- Maintain information about this spell from this group member
-                -- on this particular target.
-
-                state.targets = {}
-                state.targets[targetGuid] = aura_env.createAuraTimer(duration, expirationTime)
-            else
-                state.targets[targetGuid] = aura_env.createAuraTimer(duration, expirationTime)
-
-                local targetCount, maxAuraTimer = aura_env.getTargetsSummary(state.targets)
-
-                if state.targetCount ~= targetCount
-                or state.expirationTime ~= expirationTime then
-                    -- Update the display.
+                if state == nil then
+                    state = {}
+                    allstates[stateId] = state
 
                     changed = true
 
                     state.changed = true
-                    state.duration = maxAuraTimer:GetDuration()
-                    state.expirationTime = maxAuraTimer:GetExpirationTime()
+                    state.show = true
+                    state.unit = sourceUnit
+                    state.icon = icon
+                    state.spellId = spellId
+                    state.progressType = "timed"
+                    state.autoHide = true
+                    state.duration = duration
+                    state.expirationTime = expirationTime
 
-                    state.targetCount = targetCount
+                    state.targetCount = 1
+
+                    -- Maintain information about this spell from this group
+                    -- member on this particular target.
+
+                    state.targets = {}
+                    state.targets[targetGuid] = aura_env.createAuraTimer(duration, expirationTime)
+                else
+                    state.targets[targetGuid] = aura_env.createAuraTimer(duration, expirationTime)
+
+                    local targetCount, maxAuraTimer = aura_env.getTargetsSummary(state.targets)
+
+                    if state.targetCount ~= targetCount
+                    or state.expirationTime ~= expirationTime then
+                        -- Update the display.
+
+                        changed = true
+
+                        state.changed = true
+                        state.duration = maxAuraTimer:GetDuration()
+                        state.expirationTime = maxAuraTimer:GetExpirationTime()
+
+                        state.targetCount = targetCount
+                    end
                 end
             end
         end
