@@ -151,6 +151,8 @@ function()
     -- Get the ElvUI buff icon frame for this clone, whether it's tracked as a
     -- "Buff" or as a "Buff Indicator".  If it's tracked as both, prefer the
     -- "Buff Indicator".
+    --
+    -- Here be dragons and use of undocumented (i.e., private) addon behavior.
 
     local tracksState = function(frame)
         -- Return 'true' if the specified ElvUI button 'frame' tracks
@@ -162,9 +164,10 @@ function()
             and frame.caster == "player"
     end
 
-    if aura_env.region
-    and aura_env.region.anchor
-    and tracksState(aura_env.region.anchor) then
+    local buffIconFrame = aura_env.region.relativeTo
+
+    if buffIconFrame ~= nil
+    and tracksState(buffIconFrame) then
         return 0.5
     end
 
@@ -173,7 +176,7 @@ function()
         return 0
     end
 
-    local buffIconFrame = nil
+    buffIconFrame = nil
     for _,frame in ipairs(unitFrame.__owner.AuraWatch) do
         if tracksState(frame) then
             buffIconFrame = frame
@@ -193,12 +196,9 @@ function()
         return 0
     end
 
-    if aura_env.region.anchor ~= buffIconFrame then
-        aura_env.region:ClearAllPoints()
-        aura_env.region:SetAllPoints(buffIconFrame)
-    end
-
-    aura_env.region.anchor = buffIconFrame
+    aura_env.region:SetAnchor("CENTER", buffIconFrame, "CENTER")
+    aura_env.region:SetWidth(buffIconFrame:GetWidth())
+    aura_env.region:SetHeight(buffIconFrame:GetHeight())
 
     return 0.5
 end
