@@ -91,6 +91,17 @@ function(allstates, event)
         local state = allstates[stateKey]
         if aura_env.empoweredSpell == spellId
         and aura_env.empoweredCastTime == timestamp then
+            if spellId ~= 48438 then
+                -- SOTF empowers only the first application of Rejuvenation,
+                -- Germination, or Regrowth, even if Memory of the Mother Tree
+                -- results in multiple applications at the same time.  Reset
+                -- the empowered state so that the following applications do
+                -- not show as empowered.
+
+                aura_env.empoweredSpell = nil
+                aura_env.empoweredCastTime = nil
+            end
+
             if state == nil then
                 state = {}
                 allstates[stateKey] = state
