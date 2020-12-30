@@ -28,7 +28,7 @@ aura_env.getGroupUnitId = function(unitGuid)
 end
 
 -------------------------------------------------------------------------------
--- TSU: CLEU:SPELL_AURA_APPLIED:SPELL_AURA_REFRESH:SPELL_AURA_REMOVED:SPELL_CAST_SUCCESS
+-- TSU: CLEU:SPELL_AURA_APPLIED:SPELL_AURA_REFRESH:SPELL_AURA_REMOVED
 
 function(allstates, event)
     local timestamp, subevent, _, sourceGuid, _, _, _, destGuid, _, destFlags, _, spellId = CombatLogGetCurrentEventInfo()
@@ -119,11 +119,10 @@ function(allstates, event)
         end
     elseif subevent == "SPELL_AURA_REMOVED" then
         if spellId == 114108 then
-            -- The SOTF aura is removed after the 'SPELL_CAST_SUCCESS' but
-            -- before the empowered 'SPELL_AURA_APPLIED' or
-            -- 'SPELL_AURA_REFRESH', so we've already set
-            -- 'aura_env.empoweredSpell' and 'aura_env.empoweredCastTime', and
-            -- it's safe to set 'aura_env.sotfApplied' to false.
+            -- The SOTF aura is removed after the first empowered
+            -- 'SPELL_AURA_APPLIED' or 'SPELL_AURA_REFRESH', so we've already
+            -- set 'aura_env.empoweredSpell' and 'aura_env.empoweredCastTime',
+            -- and it's safe to set 'aura_env.sotfApplied' to false.
 
             aura_env.sotfApplied = false
 
