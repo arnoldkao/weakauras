@@ -6,12 +6,12 @@ aura_env.empoweredSpell = nil
 aura_env.empoweredCastTime = nil
 
 aura_env.trackedSpellIds = {
-    [114108]=true,  -- Soul of the Forest
-    [774]=true,     -- Rejuvenation
-    [8936]=true,    -- Regrowth
-    [48438]=true,   -- Wild Growth
-    [155777]=true,  -- Rejuvenation (Germination)
-    [197721]=true,  -- Flourish
+    [114108] = true,    -- Soul of the Forest
+    [774]    = true,    -- Rejuvenation
+    [8936]   = true,    -- Regrowth
+    [48438]  = true,    -- Wild Growth
+    [155777] = true,    -- Rejuvenation (Germination)
+    [197721] = true,    -- Flourish
 }
 
 aura_env.getGroupUnitId = function(unitGuid)
@@ -37,7 +37,7 @@ function(allstates, event)
         return false
     end
 
-    if not aura_env.trackedSpellIds[spellId] then
+    if aura_env.trackedSpellIds[spellId] == nil then
         return false
     end
 
