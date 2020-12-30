@@ -4,6 +4,7 @@
 aura_env.sotfApplied = false
 aura_env.empoweredSpell = nil
 aura_env.empoweredCastTime = nil
+aura_env.ignoreNext = {}
 
 aura_env.trackedSpellIds = {
     [114108] = true,    -- Soul of the Forest
@@ -28,7 +29,7 @@ aura_env.getGroupUnitId = function(unitGuid)
 end
 
 -------------------------------------------------------------------------------
--- TSU: CLEU:SPELL_AURA_APPLIED:SPELL_AURA_REFRESH:SPELL_AURA_REMOVED
+-- TSU: CLEU:SPELL_AURA_APPLIED:SPELL_AURA_REFRESH:SPELL_AURA_REMOVED:SPELL_CAST_SUCCESS
 
 function(allstates, event)
     local timestamp, subevent, _, sourceGuid, _, _, _, destGuid, _, destFlags, _, spellId = CombatLogGetCurrentEventInfo()
@@ -76,7 +77,9 @@ function(allstates, event)
         end
 
         return changed
-    elseif subevent == "SPELL_AURA_APPLIED" or subevent == "SPELL_AURA_REFRESH" then
+    elseif subevent == "SPELL_AURA_APPLIED"
+    or subevent == "SPELL_AURA_REFRESH"
+    or subevent == "SPELL_CAST_SUCCESS" then
         if spellId == 114108 then
             aura_env.sotfApplied = true
             return false
@@ -89,7 +92,14 @@ function(allstates, event)
         end
 
         local state = allstates[stateKey]
-        if aura_env.empoweredSpell == spellId
+
+        if aura_env.ignoreNext.target == destUnit
+        and aura_env.ignoreNext.spellId == spellId then
+            aura_env.ignoreNext.target = nil
+            aura_env.ignoreNext.spellId = nil
+
+            return false
+        elseif aura_env.empoweredSpell == spellId
         and aura_env.empoweredCastTime == timestamp then
             if spellId ~= 48438 then
                 -- SOTF empowers only the first application of Rejuvenation,
@@ -100,6 +110,14 @@ function(allstates, event)
 
                 aura_env.empoweredSpell = nil
                 aura_env.empoweredCastTime = nil
+
+                -- Ignore the next 'SPELL_AURA_APPLIED', 'SPELL_AURA_REFRESH',
+                -- or 'SPELL_CAST_SUCCESS' event for this same spell on the
+                -- same target so that it doesn't overwrite this empowered
+                -- state.
+
+                aura_env.ignoreNext.target = destUnit
+                aura_env.ignoreNext.spellId = spellId
             end
 
             if state == nil then
@@ -130,10 +148,12 @@ function(allstates, event)
         end
     elseif subevent == "SPELL_AURA_REMOVED" then
         if spellId == 114108 then
-            -- The SOTF aura is removed after the first empowered
-            -- 'SPELL_AURA_APPLIED' or 'SPELL_AURA_REFRESH', so we've already
-            -- set 'aura_env.empoweredSpell' and 'aura_env.empoweredCastTime',
-            -- and it's safe to set 'aura_env.sotfApplied' to false.
+            -- The SOTF aura is removed after 'SPELL_CAST_SUCCESS', so we've
+            -- already set 'aura_env.empoweredSpell' and
+            -- 'aura_env.empoweredCastTime', and it's safe to set
+            -- 'aura_env.sotfApplied' to false.  ('SPELL_AURA_APPLIED' and
+            -- 'SPELL_AURA_REFRESH' sometimes fire before and sometimes fire
+            -- after 'SPELL_AURA_REMOVED'.)
 
             aura_env.sotfApplied = false
 
