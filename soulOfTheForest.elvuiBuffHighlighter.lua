@@ -49,6 +49,7 @@ aura_env.sotfState = {
 
     ["__sotfApplied"] = false,
     ["__empoweredTimestamp"] = nil,
+    ["__empoweredTarget"] = nil,
     ["__empoweredSpellId"] = nil,
 
     ------------------------
@@ -72,44 +73,18 @@ aura_env.sotfState = {
         return nil
     end,
 
-    -----------------------
-    -- PRIVATE MANIPULATORS
-    -----------------------
+    --------------------
+    -- PRIVATE ACCESSORS
+    --------------------
 
-    ["__EmpowerHeal"] = function(self, timestamp, spellId)
-        -- Try to empower an application of the specified 'spellId' at the
-        -- specified 'timestamp'.  Return 'true' if the application is
-        -- empowered.  Otherwise, return 'false'.
+    ["__IsEmpowered"] = function(self, timestamp, targetGuid, spellId)
+        -- Return 'true' if the specified 'spellId' on the specified
+        -- 'targetGuid' at the specified 'timestamp' is empowered.  Otherwise,
+        -- return 'false'.
 
-        if not self.__sotfApplied
-        and (self.__empoweredTimestamp ~= timestamp or self.__empoweredSpellId ~= nil) then
-            return false
-        end
-
-        -- The SOTF aura is applied, or it was removed at 'timestamp' without
-        -- first empowering a spell.  This 'spellId' at 'timestamp' is
-        -- empowered.
-
-        self.__sotfApplied = false
-
-        if spellId == 48438 then
-            -- This is an application of Wild Growth.  Any following
-            -- applications of Wild Growth at 'timestamp' will also be
-            -- empowered.
-
-            self.__empoweredTimestamp = timestamp
-            self.__empoweredSpellId = spellId
-        else
-            -- This is an application of another heal.  Empower this
-            -- application, but prevent all following spells from being
-            -- empowered, even if they are at 'timestamp', until the next
-            -- application of the SOTF buff.
-
-            self.__empoweredTimestamp = nil
-            self.__empoweredSpellId = nil
-        end
-
-        return true
+        return self.__empoweredTimestamp == timestamp
+            and (self.__empoweredTarget == targetGuid or spellId == 48438)
+            and self.__empoweredSpellId == spellId
     end,
 
     ---------------
@@ -127,15 +102,32 @@ aura_env.sotfState = {
 
         self.__sotfApplied = false
 
-        if self.__empoweredTimestamp == timestamp then
-            -- The SOTF buff has already been consumed at 'timestamp' for a
-            -- particular heal.  Do nothing.
+        if self.__empoweredTimestamp ~= timestamp then
+            -- The SOTF buff is newly removed, but we don't know yet what spell
+            -- it empowers.
 
-            return
+            self.__empoweredTimestamp = timestamp
+            self.__empoweredTarget = nil
+            self.__empoweredSpellId = nil
         end
+    end,
 
-        self.__empoweredTimestamp = timestamp
-        self.__empoweredSpellId = nil
+    ["RecordHealCast"] = function(self, timestamp, targetGuid, spellId)
+        -- Record the specified 'spellId' on the specified 'targetGuid' as the
+        -- last casted heal at the specified 'timestamp', and update the
+        -- empowered cast state data as appropriate.
+
+        if self.__sotfApplied
+        or (self.__empoweredTimestamp == timestamp and self.__empoweredSpellId == nil) then
+            -- The SOTF aura is applied, or it was removed at 'timestamp'
+            -- without first empowering a spell.  This 'spellId' at 'timestamp'
+            -- consumes the SOTF empowerment.
+
+            self.__sotfApplied = false
+            self.__empoweredTimestamp = timestamp
+            self.__empoweredTarget = targetGuid
+            self.__empoweredSpellId = spellId
+        end
     end,
 
     ["Flourish"] = function(self, allstates)
@@ -168,7 +160,7 @@ aura_env.sotfState = {
         local stateKey = self.__MakeStateKey(targetGuid, spellId)
         local state = allstates[stateKey]
 
-        if self:__EmpowerHeal(timestamp, spellId) then
+        if self:__IsEmpowered(timestamp, targetGuid, spellId) then
             -- Insert or update the state in 'allstates'.
 
             if state == nil then
@@ -225,7 +217,7 @@ aura_env.sotfState = {
 }
 
 -------------------------------------------------------------------------------
--- TSU: CLEU:SPELL_AURA_APPLIED:SPELL_AURA_REFRESH:SPELL_AURA_REMOVED
+-- TSU: CLEU:SPELL_AURA_APPLIED:SPELL_AURA_REFRESH:SPELL_AURA_REMOVED:SPELL_CAST_SUCCESS
 
 function(allstates, event)
     local timestamp, subevent, _, sourceGuid, _, _, _, targetGuid, _, targetFlags, _, spellId = CombatLogGetCurrentEventInfo()
@@ -253,7 +245,10 @@ function(allstates, event)
 
     local sotfState = aura_env.sotfState;
 
-    if subevent == "SPELL_AURA_APPLIED"
+    if subevent == "SPELL_CAST_SUCCESS" and spellId ~= 197721 then
+        sotfState:RecordHealCast(timestamp, targetGuid, spellId)
+        return sotfState:ApplyHeal(allstates, timestamp, targetGuid, spellId)
+    elseif subevent == "SPELL_AURA_APPLIED"
     or subevent == "SPELL_AURA_REFRESH" then
         if spellId == 114108 then       -- Soul of the Forest
             sotfState:ApplySotf()
