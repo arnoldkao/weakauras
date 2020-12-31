@@ -1,4 +1,11 @@
 -------------------------------------------------------------------------------
+--[[ TODO
+
+- Support SOTF detection in Convoke?
+
+]]
+
+-------------------------------------------------------------------------------
 --[[ Implementation Notes
 
 There is no consistent order in which 'SPELL_CAST_SUCCESS',
