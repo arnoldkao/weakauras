@@ -250,6 +250,10 @@ function(allstates, event)
 
     local sotfState = aura_env.sotfState;
 
+    if aura_env.config.debug then
+        print(CombatLogGetCurrentEventInfo())
+    end
+
     if subevent == "SPELL_CAST_SUCCESS" and spellId ~= 197721 then
         sotfState:RecordHealCast(timestamp, targetGuid, spellId)
 
