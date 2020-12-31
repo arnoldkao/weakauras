@@ -258,29 +258,13 @@ function(allstates, event)
         -- to "backfill" on that 'SPELL_AURA_APPLIED'/'SPELL_AURA_REFRESH'
         -- event.
 
-        if spellId == 48438 then
-            -- Wild Growth's 'SPELL_CAST_SUCCESS' has no target.  Check if the
-            -- player has a self-applied Wild Growth with a duration and
-            -- expiration time that imply that the aura was applied just now.
-            -- If so, then highlight it.
-
-            local _, _, _, _, duration, expirationTime = WA_GetUnitBuff("player", spellId, "PLAYER")
-
-            local currentTime = GetTime()
-
-            if expirationTime ~= nil
-            and expirationTime < currentTime + duration + 0.1
-            and expirationTime > currentTime + duration - 0.1 then
-                return sotfState:ApplyHeal(allstates,
-                                           timestamp,
-                                           sourceGuid,
-                                           spellId)
-            end
-        elseif targetGuid == sourceGuid then
-            print(aura_env.lastPlayerAppliedHeal)
+        if (targetGuid == sourceGuid or spellId == 48438)
+        and aura_env.lastPlayerAppliedHealTime == timestamp
+        and (aura_env.lastPlayerAppliedHeal == spellId
+            or (aura_env.lastPlayerAppliedHeal == 155777 and spellId == 774)) then
             return sotfState:ApplyHeal(allstates,
                                        timestamp,
-                                       targetGuid,
+                                       sourceGuid,
                                        aura_env.lastPlayerAppliedHeal)
         end
     elseif subevent == "SPELL_AURA_APPLIED"
@@ -292,6 +276,7 @@ function(allstates, event)
             return sotfState:Flourish(allstates)
         else
             if targetGuid == sourceGuid then
+                aura_env.lastPlayerAppliedHealTime = timestamp
                 aura_env.lastPlayerAppliedHeal = spellId
             end
 
