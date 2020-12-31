@@ -219,9 +219,13 @@ aura_env.sotfState = {
 }
 
 -------------------------------------------------------------------------------
--- TSU: CLEU:SPELL_AURA_APPLIED:SPELL_AURA_REFRESH:SPELL_AURA_REMOVED:SPELL_CAST_SUCCESS
+-- TSU: CLEU:SPELL_AURA_APPLIED:SPELL_AURA_REFRESH:SPELL_AURA_REMOVED:SPELL_CAST_SUCCESS, WA_SOTF_DEFERRED_FLOURISH
 
 function(allstates, event)
+    if event == "WA_SOTF_DEFERRED_FLOURISH" then
+        return aura_env.sotfState:Flourish(allstates)
+    end
+
     local timestamp, subevent, _, sourceGuid, _, _, _, targetGuid, _, targetFlags, _, spellId = CombatLogGetCurrentEventInfo()
 
     -- Ignore events not caused by the player.
@@ -277,7 +281,11 @@ function(allstates, event)
             sotfState:ApplySotf()
             return false
         elseif spellId == 197721 then   -- Flourish
-            return sotfState:Flourish(allstates)
+            -- Delay the processing of this event, since the duration of the
+            -- buffs might not be updated immediately.
+
+            C_Timer.After(0.1, function() WeakAuras.ScanEvents("WA_SOTF_DEFERRED_FLOURISH") end)
+            return false
         else
             if targetGuid == sourceGuid then
                 aura_env.lastPlayerAppliedHealTime = timestamp
