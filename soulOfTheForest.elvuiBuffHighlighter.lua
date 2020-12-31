@@ -234,10 +234,13 @@ function(allstates, event)
         return false
     end
 
-    -- Ignore events not affecting the player or a group member.
+    -- Ignore events not affecting the player or a group member, unless the
+    -- spell is Wild Growth.  (Wild Growth's 'SPELL_CAST_SUCCESS' event never
+    -- specifies a target.)
 
-    if bit.band(targetFlags, COMBATLOG_OBJECT_TYPE_PLAYER) == 0
-    or bit.band(targetFlags, COMBATLOG_OBJECT_AFFILIATION_OUTSIDER) ~= 0 then
+    if spellId ~= 48438
+    and (bit.band(targetFlags, COMBATLOG_OBJECT_TYPE_PLAYER) == 0
+    or bit.band(targetFlags, COMBATLOG_OBJECT_AFFILIATION_OUTSIDER) ~= 0) then
         return false
     end
 
@@ -247,14 +250,39 @@ function(allstates, event)
 
     if subevent == "SPELL_CAST_SUCCESS" and spellId ~= 197721 then
         sotfState:RecordHealCast(timestamp, targetGuid, spellId)
-        return sotfState:ApplyHeal(allstates, timestamp, targetGuid, spellId)
+        if spellId == 48438 then
+            -- Wild Growth's 'SPELL_CAST_SUCCESS' has no target.  The only unit
+            -- for which we'd see a 'SPELL_AURA_APPLIED' before we see the
+            -- 'SPELL_CAST_SUCCESS' is the player, so we specially check if the
+            -- player has a Wild Growth aura applied by this player with a
+            -- duration and expiration time that imply that the aura was
+            -- applied just now.
+
+            local _, _, _, _, duration, expirationTime = WA_GetUnitBuff("player", spellId, "PLAYER")
+
+            local currentTime = GetTime()
+
+            if expirationTime ~= nil
+            and expirationTime < currentTime + duration + 0.1
+            and expirationTime > currentTime + duration - 0.1 then
+                return sotfState:ApplyHeal(allstates,
+                                           timestamp,
+                                           sourceGuid,
+                                           spellId)
+            end
+        else
+            return sotfState:ApplyHeal(allstates,
+                                       timestamp,
+                                       targetGuid,
+                                       spellId)
+        end
     elseif subevent == "SPELL_AURA_APPLIED"
     or subevent == "SPELL_AURA_REFRESH" then
         if spellId == 114108 then       -- Soul of the Forest
             sotfState:ApplySotf()
             return false
         elseif spellId == 197721 then   -- Flourish
-            return sotfState:Flourish()
+            return sotfState:Flourish(allstates)
         else
             return sotfState:ApplyHeal(allstates,
                                        timestamp,
@@ -263,7 +291,7 @@ function(allstates, event)
         end
     elseif subevent == "SPELL_AURA_REMOVED" then
         if spellId == 114108 then       -- Soul of the Forest
-            sotfState:RemoveSotf()
+            sotfState:RemoveSotf(timestamp)
             return false
         elseif spellId == 197721 then   -- Flourish
             return false
