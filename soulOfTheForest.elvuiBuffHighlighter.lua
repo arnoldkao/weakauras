@@ -1,4 +1,36 @@
 -------------------------------------------------------------------------------
+--[[ Implementation Notes
+
+There is no consistent order in which 'SPELL_CAST_SUCCESS',
+'SPELL_AURA_APPLIED'/'SPELL_AURA_REFRESH', and 'SPELL_AURA_REMOVED' events are
+fired.  We therefore assume:
+
+- If a 'SPELL_CAST_SUCCESS' of an empowerable HOT comes after a
+  'SPELL_AURA_APPLIED' of SOTF but before a 'SPELL_AURA_REMOVED' of SOTF, then
+  the spell cast is empowered by SOTF.
+- If SOTF is 'SPELL_AURA_REMOVED' before a 'SPELL_CAST_SUCCESS' of an
+  empowerable HOT, but the 'SPELL_CAST_SUCCESS' of an empowerable HOT fires
+  later with the same 'timestamp', then that spell cast is empowered by SOTF.
+- A 'SPELL_AURA_APPLIED'/'SPELL_AURA_REFRESH' of a spell is empowered only if
+  it has the same 'timestamp', 'spellId', and 'targetGuid' as an empowered
+  cast.  If the empowered cast is Wild Growth, then the 'targetGuid' is
+  ignored.
+
+Because a 'SPELL_CAST_SUCCESS' may come either before or after its
+corresponding 'SPELL_AURA_APPLIED'/'SPELL_AURA_REFRESH', each of these events
+must update the display state.
+
+We check 'SPELL_CAST_SUCCESS' at all to order amongst 'SPELL_CAST_SUCCESS'
+events and determine which are empowered by SOTF.  Two spells may be cast at
+the same 'timestamp' due to spell queueing, but only the first of the
+'SPELL_CAST_SUCCESS'es would be empowered by SOTF.
+
+'SPELL_AURA_APPLIED'/'SPELL_AURA_REFRESH' cannot be relied upon for deducing
+spell cast order.
+
+]]
+
+-------------------------------------------------------------------------------
 -- init
 
 aura_env.trackedSpellIds = {
