@@ -138,7 +138,7 @@ aura_env.sotfState = {
         local changed = false
         for _, state in pairs(allstates) do
             if state.show == true then
-                local _, _, _, _, duration, expirationTime = WA_GetUnitBuff(state.unit, state.spellId)
+                local _, _, _, _, duration, expirationTime = WA_GetUnitBuff(state.unit, state.spellId, "PLAYER")
 
                 state.duration = duration
                 state.expirationTime = expirationTime
@@ -178,7 +178,7 @@ aura_env.sotfState = {
             state.progressType = "timed"
             state.autoHide = true
 
-            local _, _, _, _, duration, expirationTime = WA_GetUnitBuff(targetUnit, spellId)
+            local _, _, _, _, duration, expirationTime = WA_GetUnitBuff(targetUnit, spellId, "PLAYER")
             state.duration = duration
             state.expirationTime = expirationTime
 
