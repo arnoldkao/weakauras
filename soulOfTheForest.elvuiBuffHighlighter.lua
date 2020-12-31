@@ -83,10 +83,25 @@ aura_env.sotfState = {
         -- 'targetGuid' at the specified 'timestamp' is empowered.  Otherwise,
         -- return 'false'.
 
-        return self.__empoweredTimestamp == timestamp
-            and (self.__empoweredTarget == targetGuid or spellId == 48438)
-            and (self.__empoweredCastSpellId == spellId
-                or (self.__empoweredCastSpellId == 774 and spellId == 155777))
+        if spellId == 48438 then
+            -- This is an application of Wild Growth.  Check its spell ID,
+            -- allow a time tolerance for the timestamp, and ignore the target.
+
+            return self.__empoweredCastSpellId == spellId
+                and self.__empoweredTimestamp <= timestamp
+                and self.__empoweredTimestamp + 0.2 > timestamp
+        elseif spellId == 155777 then
+            -- This is an application of Germination.  The empowered cast spell
+            -- ID should be Rejuvenation.
+
+            return self.__empoweredTimestamp == timestamp
+                and self.__empoweredTarget == targetGuid
+                and self.__empoweredCastSpellId == 774
+        else
+            return self.__empoweredTimestamp == timestamp
+                and self.__empoweredTarget == targetGuid
+                and self.__empoweredCastSpellId == spellId
+        end
     end,
 
     ---------------
