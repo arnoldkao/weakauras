@@ -1,6 +1,31 @@
 -------------------------------------------------------------------------------
 -- init
 
+aura_env.sotfState = {
+    ["ApplySotf"] = function(self)
+        -- Apply the SOTF buff.
+    end,
+
+    ["RemoveSotf"] = function(self, timestamp)
+        -- Remove the SOTF buff at the specified 'timestamp'.
+    end,
+
+    ["Flourish"] = function(self, allstates)
+        -- Refresh the duration and expiration time on all states in the
+        -- specified 'allstates'.
+    end,
+
+    ["ApplyHeal"] = function(self, allstates)
+        -- Apply or refresh a HOT effect.  Update the specified 'allstates' as
+        -- appropriate.
+    end,
+
+    ["RemoveHeal"] = function(self, allstates)
+        -- Remove a HOT effect.  Update the specified 'allstates' as
+        -- appropriate.
+    end
+}
+
 aura_env.sotfApplied = false
 aura_env.empoweredSpell = nil
 aura_env.empoweredCastTime = nil
