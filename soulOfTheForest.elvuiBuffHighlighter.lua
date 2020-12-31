@@ -16,15 +16,16 @@ fired.  We therefore assume:
   cast.  If the empowered cast is Wild Growth, then the 'targetGuid' is
   ignored.
 
-Because a 'SPELL_CAST_SUCCESS' may come either before or after its
-corresponding 'SPELL_AURA_APPLIED'/'SPELL_AURA_REFRESH', each of these events
-must update the display state.
+A 'SPELL_CAST_SUCCESS' comes *after* its corresponding
+'SPELL_AURA_APPLIED'/'SPELL_AURA_REFRESH' on the player, but *before* its
+corresponding 'SPELL_AURA_APPLIED'/'SPELL_AURA_REFRESH' on other group members.
+Therefore, when we observe a 'SPELL_CAST_SUCCESS' targeting the player, we also
+rerun the 'SPELL_AURA_APPLIED'/'SPELL_AURA_REFRESH' logic.
 
 We check 'SPELL_CAST_SUCCESS' at all to order amongst 'SPELL_CAST_SUCCESS'
 events and determine which are empowered by SOTF.  Two spells may be cast at
 the same 'timestamp' due to spell queueing, but only the first of the
 'SPELL_CAST_SUCCESS'es would be empowered by SOTF.
-
 'SPELL_AURA_APPLIED'/'SPELL_AURA_REFRESH' cannot be relied upon for deducing
 spell cast order.
 
@@ -50,7 +51,7 @@ aura_env.sotfState = {
     ["__sotfApplied"] = false,
     ["__empoweredTimestamp"] = nil,
     ["__empoweredTarget"] = nil,
-    ["__empoweredSpellId"] = nil,
+    ["__empoweredCastSpellId"] = nil,
 
     ------------------------
     -- PRIVATE CLASS METHODS
@@ -84,7 +85,8 @@ aura_env.sotfState = {
 
         return self.__empoweredTimestamp == timestamp
             and (self.__empoweredTarget == targetGuid or spellId == 48438)
-            and self.__empoweredSpellId == spellId
+            and (self.__empoweredCastSpellId == spellId
+                or (self.__empoweredCastSpellId == 774 and spellId == 155777))
     end,
 
     ---------------
@@ -108,7 +110,7 @@ aura_env.sotfState = {
 
             self.__empoweredTimestamp = timestamp
             self.__empoweredTarget = nil
-            self.__empoweredSpellId = nil
+            self.__empoweredCastSpellId = nil
         end
     end,
 
@@ -118,7 +120,7 @@ aura_env.sotfState = {
         -- empowered cast state data as appropriate.
 
         if self.__sotfApplied
-        or (self.__empoweredTimestamp == timestamp and self.__empoweredSpellId == nil) then
+        or (self.__empoweredTimestamp == timestamp and self.__empoweredCastSpellId == nil) then
             -- The SOTF aura is applied, or it was removed at 'timestamp'
             -- without first empowering a spell.  This 'spellId' at 'timestamp'
             -- consumes the SOTF empowerment.
@@ -126,7 +128,7 @@ aura_env.sotfState = {
             self.__sotfApplied = false
             self.__empoweredTimestamp = timestamp
             self.__empoweredTarget = targetGuid
-            self.__empoweredSpellId = spellId
+            self.__empoweredCastSpellId = spellId
         end
     end,
 
@@ -250,13 +252,17 @@ function(allstates, event)
 
     if subevent == "SPELL_CAST_SUCCESS" and spellId ~= 197721 then
         sotfState:RecordHealCast(timestamp, targetGuid, spellId)
+
+        -- 'SPELL_CAST_SUCCESS' fires after its corresponding
+        -- 'SPELL_AURA_APPLIED'/'SPELL_AURA_REFRESH' on the player, so we need
+        -- to "backfill" on that 'SPELL_AURA_APPLIED'/'SPELL_AURA_REFRESH'
+        -- event.
+
         if spellId == 48438 then
-            -- Wild Growth's 'SPELL_CAST_SUCCESS' has no target.  The only unit
-            -- for which we'd see a 'SPELL_AURA_APPLIED' before we see the
-            -- 'SPELL_CAST_SUCCESS' is the player, so we specially check if the
-            -- player has a Wild Growth aura applied by this player with a
-            -- duration and expiration time that imply that the aura was
-            -- applied just now.
+            -- Wild Growth's 'SPELL_CAST_SUCCESS' has no target.  Check if the
+            -- player has a self-applied Wild Growth with a duration and
+            -- expiration time that imply that the aura was applied just now.
+            -- If so, then highlight it.
 
             local _, _, _, _, duration, expirationTime = WA_GetUnitBuff("player", spellId, "PLAYER")
 
@@ -270,11 +276,12 @@ function(allstates, event)
                                            sourceGuid,
                                            spellId)
             end
-        else
+        elseif targetGuid == sourceGuid then
+            print(aura_env.lastPlayerAppliedHeal)
             return sotfState:ApplyHeal(allstates,
                                        timestamp,
                                        targetGuid,
-                                       spellId)
+                                       aura_env.lastPlayerAppliedHeal)
         end
     elseif subevent == "SPELL_AURA_APPLIED"
     or subevent == "SPELL_AURA_REFRESH" then
@@ -284,6 +291,10 @@ function(allstates, event)
         elseif spellId == 197721 then   -- Flourish
             return sotfState:Flourish(allstates)
         else
+            if targetGuid == sourceGuid then
+                aura_env.lastPlayerAppliedHeal = spellId
+            end
+
             return sotfState:ApplyHeal(allstates,
                                        timestamp,
                                        targetGuid,
