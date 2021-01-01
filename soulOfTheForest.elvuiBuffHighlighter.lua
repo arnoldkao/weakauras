@@ -263,12 +263,12 @@ function(allstates, event)
     end
 
     -- Ignore events not affecting the player or a group member, unless the
-    -- spell is Wild Growth.  (Wild Growth's 'SPELL_CAST_SUCCESS' event never
-    -- specifies a target.)
+    -- event is a 'SPELL_CAST_SUCCESS' of Wild Growth, which never specifies a
+    -- target.
 
-    if spellId ~= 48438
+    if (subevent ~= "SPELL_CAST_SUCCESS" or spellId ~= 48438)
     and (bit.band(targetFlags, COMBATLOG_OBJECT_TYPE_PLAYER) == 0
-    or bit.band(targetFlags, COMBATLOG_OBJECT_AFFILIATION_OUTSIDER) ~= 0) then
+        or bit.band(targetFlags, COMBATLOG_OBJECT_AFFILIATION_OUTSIDER) ~= 0) then
         return false
     end
 
