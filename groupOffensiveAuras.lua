@@ -87,8 +87,10 @@ aura_env.getTargetsSummary = function(targets)
     local count = 0
     local maxAuraTimer = nil
 
+    local currentTime = GetTime()
+
     for unitGuid, auraTimer in pairs(targets) do
-        if auraTimer:GetExpirationTime() <= GetTime() then
+        if auraTimer:GetExpirationTime() <= currentTime then
             -- Delete this entry from 'targets' for cleanliness.
 
             targets[unitGuid] = nil
@@ -180,8 +182,17 @@ function(allstates, event, ...)
 
                     local targetCount, maxAuraTimer = aura_env.getTargetsSummary(state.targets)
 
-                    if state.targetCount ~= targetCount
-                    or state.expirationTime ~= expirationTime then
+                    if targetCount == 0 then
+                        -- Hide the display.  Note that this condition might
+                        -- occur if 'expirationTime' has already passed.
+
+                        changed = true
+
+                        state.changed = true
+                        state.show = false
+                    elseif state.targetCount ~= targetCount
+                    or state.duration ~= maxAuraTimer:GetDuration()
+                    or state.expirationTime ~= maxAuraTimer:GetExpirationTime() then
                         -- Update the display.
 
                         changed = true
