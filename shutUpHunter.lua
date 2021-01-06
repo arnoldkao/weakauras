@@ -27,10 +27,6 @@ aura_env.stupidHunterGuids = {}
 aura_env.countdownFilter = function(chatFrame, event, message, authorName, _, _, _, _, _, _, _, _, _, authorGuid)
     -- Counters https://wago.io/IzZwQ8AW-/1
 
-    if not unitGuidIsGroupHunter(authorGuid) then
-        return false
-    end
-
     if message:match("^ *Wild Spirits on the ground, TANK DON'T MOVE *$") then
         aura_env.stupidHunterGuids[authorGuid] = true
         return true
