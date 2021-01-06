@@ -1,3 +1,6 @@
+-------------------------------------------------------------------------------
+-- init
+
 local groupUnitIdForGuid = function(unitGuid)
     for unit in WA_IterateGroupMembers() do
         if UnitGUID(unit) == unitGuid then
@@ -18,21 +21,15 @@ local unitGuidIsGroupHunter = function(unitGuid)
     return unitClass == "HUNTER"
 end
 
-local targetInWildSpiritsFilter = function(chatFrame, event, message, authorName, _, _, _, _, _, _, _, _, _, authorGuid)
-    -- Counters https://wago.io/UGRQJSmz_/1
-
-    if not message:match(" in wild spirits *$") then
-        return false
-    end
-
-    return unitGuidIsGroupHunter(authorGuid)
-end
-
 local aura_env = aura_env
 aura_env.stupidHunterGuids = {}
 
-local countdownFilter = function(chatFrame, event, message, authorName, _, _, _, _, _, _, _, _, _, authorGuid)
+aura_env.countdownFilter = function(chatFrame, event, message, authorName, _, _, _, _, _, _, _, _, _, authorGuid)
     -- Counters https://wago.io/IzZwQ8AW-/1
+
+    if not unitGuidIsGroupHunter(authorGuid) then
+        return false
+    end
 
     if message:match("^ *Wild Spirits on the ground, TANK DON'T MOVE *$") then
         aura_env.stupidHunterGuids[authorGuid] = true
@@ -51,7 +48,13 @@ local countdownFilter = function(chatFrame, event, message, authorName, _, _, _,
     return false
 end
 
-local events = {
+aura_env.targetInWildSpiritsFilter = function(chatFrame, event, message, authorName, _, _, _, _, _, _, _, _, _, authorGuid)
+    -- Counters https://wago.io/UGRQJSmz_/1
+
+    return message:match(" in wild spirits *$") and unitGuidIsGroupHunter(authorGuid)
+end
+
+aura_env.events = {
     "CHAT_MSG_SAY",
     "CHAT_MSG_YELL",
     "CHAT_MSG_PARTY",
@@ -60,7 +63,18 @@ local events = {
     "CHAT_MSG_INSTANCE_CHAT_LEADER",
 }
 
-for _, event in pairs(events) do
-    ChatFrame_AddMessageEventFilter(event, targetInWildSpiritsFilter)
-    ChatFrame_AddMessageEventFilter(event, countdownFilter)
+-------------------------------------------------------------------------------
+-- show
+
+for _, event in pairs(aura_env.events) do
+    ChatFrame_AddMessageEventFilter(event, aura_env.targetInWildSpiritsFilter)
+    ChatFrame_AddMessageEventFilter(event, aura_env.countdownFilter)
+end
+
+-------------------------------------------------------------------------------
+-- hide
+
+for _, event in pairs(aura_env.events) do
+    ChatFrame_RemoveMessageEventFilter(event, aura_env.targetInWildSpiritsFilter)
+    ChatFrame_RemoveMessageEventFilter(event, aura_env.countdownFilter)
 end
