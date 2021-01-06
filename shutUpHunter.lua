@@ -57,6 +57,8 @@ aura_env.events = {
     "CHAT_MSG_PARTY_LEADER",
     "CHAT_MSG_INSTANCE_CHAT",
     "CHAT_MSG_INSTANCE_CHAT_LEADER",
+    "CHAT_MSG_RAID",
+    "CHAT_MSG_RAID_LEADER",
 }
 
 -------------------------------------------------------------------------------
