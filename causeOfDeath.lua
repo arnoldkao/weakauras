@@ -191,6 +191,13 @@ function(event, ...)
         return
     end
 
+    -- If Self Only mode is enabled, ignore events affecting anyone other than
+    -- the current player.
+
+    if aura_env.config.selfOnly and not UnitIsUnit(unit, "player") then
+        return
+    end
+
     if subevent == "UNIT_DIED" then
         if not UnitIsDeadOrGhost(unit) then
             -- This unit is using Feign Death.  Ignore this event.
