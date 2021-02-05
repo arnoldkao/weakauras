@@ -40,7 +40,7 @@ aura_env.spells = {
 
     -- Kyrian Soulbinds
     [330749] = false,   -- Phial of Patience: Pelagos
-    [328900] = false,   -- Let Go of the Past: Pelagos
+    -- [328900] = false,-- Let Go of the Past: Pelagos; too noisy
     [330752] = false,   -- Ascendant Phial: Kleia
     -- [334067] = false,-- Mentorship: Kleia; probably too noisy
     [337697] = false,   -- Resilient Plumage: Mikanikos
