@@ -8,8 +8,6 @@
 --
 -- - Add support for 'Forgeborn Reveries' (spell ID 326514) from Necrolords'
 --   Bonesmith Heirmir soulbind.
---
--- - Add support for "Splintered Heart of Al'ar" trinket.
 
 -------------------------------------------------------------------------------
 -- init
@@ -218,7 +216,7 @@ function(event, ...)
         or spellId == 87024         -- Cauterized
         or spellId == 209261        -- Uncontained Fel
         or spellId == 123981        -- Perdition
-        or spellId == 295047 then   -- Touch of the Everlasting
+        or spellId == 344907 then   -- Splintered Heart of Al'ar
             -- Ignore this event if the aura was not just applied.
 
             if aura_env.spellIsRecentlyApplied(unit, spellId)
