@@ -169,7 +169,7 @@ aura_env.spells = {
     [325174] = false,   -- Spirit Link Totem
     [207498] = false,   -- Ancestral Protection
     [108281] = false,   -- Ancestral Guidance
-    [207400] = false,   -- Ancestral Vigor
+    -- [207400] = false,-- Ancestral Vigor; too noisy
 
     -- Warlock
     [104773] = false,   -- Unending Resolve
