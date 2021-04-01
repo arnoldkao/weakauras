@@ -1,8 +1,6 @@
 -------------------------------------------------------------------------------
 -- init
 
--- by Marok (v2.2.0)
-
 local numberOfDecimalPlaces = false
 if aura_env.config.numberOfDecimalPlaces == 2 then
     numberOfDecimalPlaces = 0
@@ -63,15 +61,18 @@ aura_env.roundPercent = function(number)
 end
 
 -------------------------------------------------------------------------------
--- trigger: UNIT_AURA, PLAYER_TALENT_UPDATE
+-- trigger activation
 
-function(arg1, arg2)
-    if arg1 == "UNIT_AURA" and arg2 ~= "player" then
+function(triggers)
+    return triggers[1]
+end
+
+-------------------------------------------------------------------------------
+-- trigger1: status: UNIT_AURA:player
+
+function(event, unit)
+    if unit ~= "player" then
         return false
-    end
-
-    if arg1 == "PLAYER_TALENT_UPDATE" then
-        aura_env.hasNeverSurrender = select(4, GetTalentInfo(4, 2, 1))
     end
 
     local currentIP = select(16, WA_GetUnitBuff("player", 190456)) or 0
@@ -85,14 +86,10 @@ function(arg1, arg2)
 end
 
 -------------------------------------------------------------------------------
--- untrigger
+-- trigger1: untrigger
 
 function(arg1, arg2)
     if arg1 == "UNIT_AURA" and arg2 ~= "player" then
-        return false
-    end
-
-    if arg1 == "PLAYER_TALENT_UPDATE" then
         return false
     end
 
@@ -100,12 +97,11 @@ function(arg1, arg2)
         return false
     end
 
-    local currentIP = aura_env.currentIP
-    return currentIP == 0
+    return aura_env.currentIP == 0
 end
 
 -------------------------------------------------------------------------------
--- duration
+-- trigger1: duration
 
 function()
     -- Never Surrender
@@ -157,6 +153,13 @@ function()
     aura_env.calc.percentOfMaxHP = percentOfMaxHP
 
     return percentOfCap, 100, true
+end
+
+-------------------------------------------------------------------------------
+-- trigger2: status: PLAYER_TALENT_UPDATE
+
+function()
+    aura_env.hasNeverSurrender = select(4, GetTalentInfoByID(22384, 1))
 end
 
 -------------------------------------------------------------------------------
