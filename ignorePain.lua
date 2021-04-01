@@ -62,45 +62,8 @@ aura_env.roundPercent = function(number)
     return math.floor(number * power) / power
 end
 
--- Thank you to Buds on wago for this function.
-
-aura_env.countAzeriteTrait = function(spellId)
-
-    local count = 0
-    local azeriteItemLocation = C_AzeriteItem.FindActiveAzeriteItem()
-    if (not azeriteItemLocation) then return 0 end
-
-    local azeritePowerLevel = C_AzeriteItem.GetPowerLevel(azeriteItemLocation)
-    local specID = GetSpecializationInfo(GetSpecialization())
-
-    for slot = 1, 5, 2 do
-        local item = Item:CreateFromEquipmentSlot(slot)
-        if (not item:IsItemEmpty()) then
-            local itemLocation = item:GetItemLocation()
-            if (C_AzeriteEmpoweredItem.IsAzeriteEmpoweredItem(itemLocation)) then
-                local tierInfo = C_AzeriteEmpoweredItem.GetAllTierInfo(itemLocation)
-                for tier, info in next, tierInfo do
-                    if (info.unlockLevel <= azeritePowerLevel) then
-                        for _, powerID in next, info.azeritePowerIDs do
-                            if C_AzeriteEmpoweredItem.IsPowerSelected(itemLocation, powerID)
-                            and C_AzeriteEmpoweredItem.IsPowerAvailableForSpec(powerID, specID)
-                            then
-                                local powerInfo = C_AzeriteEmpoweredItem.GetPowerInfo(powerID)
-                                if powerInfo.spellID == spellId then
-                                    count = count + 1
-                                end
-                            end
-                        end
-                    end
-                end
-            end
-        end
-    end
-    return count
-end
-
 -------------------------------------------------------------------------------
--- trigger: UNIT_AURA, PLAYER_EQUIPMENT_CHANGED, PLAYER_TALENT_UPDATE
+-- trigger: UNIT_AURA, PLAYER_TALENT_UPDATE
 
 function(arg1, arg2)
     if arg1 == "UNIT_AURA" and arg2 ~= "player" then
@@ -109,8 +72,6 @@ function(arg1, arg2)
 
     if arg1 == "PLAYER_TALENT_UPDATE" then
         aura_env.hasNeverSurrender = select(4, GetTalentInfo(4, 2, 1))
-    elseif arg1 == "PLAYER_EQUIPMENT_CHANGED" then
-        aura_env.hasBloodsport = (aura_env.countAzeriteTrait(279172) > 0)
     end
 
     local currentIP = select(16, WA_GetUnitBuff("player", 190456)) or 0
@@ -131,7 +92,7 @@ function(arg1, arg2)
         return false
     end
 
-    if arg1 == "PLAYER_EQUIPMENT_CHANGED" or arg1 == "PLAYER_TALENT_UPDATE" then
+    if arg1 == "PLAYER_TALENT_UPDATE" then
         return false
     end
 
@@ -172,9 +133,6 @@ function()
     local castIP = descriptionAmount * NSPerc
 
     local IPCap = math.floor(castIP * 1.3)
-    if aura_env.hasBloodsport then
-        IPCap = math.floor(castIP * 1.295)
-    end
 
     local additionalAbsorb = IPCap - currentIP
 
