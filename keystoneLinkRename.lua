@@ -1,4 +1,6 @@
-WA_KEYSTONELINKRENAME_NICKNAMES = {
+local aura_env = aura_env
+
+aura_env.nicknames = {
     [375] = aura_env.config.mists,
     [376] = aura_env.config.wake,
     [377] = aura_env.config.side,
@@ -9,10 +11,10 @@ WA_KEYSTONELINKRENAME_NICKNAMES = {
     [382] = aura_env.config.theater
 }
 
-if not WA_KEYSTONELINKRENAME_INSTALLED then
+if not aura_env.installed then
     print('Keystone Link Rename: registering chat event filter')
 
-    WA_KEYSTONELINKRENAME_INSTALLED = true
+    aura_env.installed = true
 
     local renameKeystoneLinks = function(chatFrame, event, messageBody, ...)
         local _, _, keystoneMapId = messageBody:find("|Hkeystone:180653:(%d+):")
@@ -22,7 +24,7 @@ if not WA_KEYSTONELINKRENAME_INSTALLED then
 
         keystoneMapId = tonumber(keystoneMapId)
         local localizedName, _ = C_ChallengeMode.GetMapUIInfo(keystoneMapId)
-        local nickname = WA_KEYSTONELINKRENAME_NICKNAMES[keystoneMapId]
+        local nickname = aura_env.nicknames[keystoneMapId]
         if nickname == nil or nickname == "" then
             return false, messageBody, ...
         end
