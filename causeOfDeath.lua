@@ -244,48 +244,32 @@ function(event, ...)
         end
     elseif subevent == "SPELL_ABSORBED" then
         -- Check if this absorption is from Podtender.
-        --
-        -- We cannot rely on 'subevent' to indicate the position of the spell
-        -- ID for what absorbed the damage, so we deduce it with our own logic.
-        -- Here, we search for the second repetition of the receiving target's
-        -- GUID, skip the next three values (target name, flags, and raid
-        -- flags), and use the fourth next value as the absorbing spell ID.
 
-        -- We expect the repeated GUID to be at an index in the range,
-        -- '[12, 15]'.
+        local absorbSpell = select(16, ...)
 
-        local absorbSpell = nil
-        for argPos = 12, 15 do
-            local arg = select(argPos, ...)
-            if arg == unitGuid then
-                absorbSpell = select(argPos + 4, ...)
-                break
+        if absorbSpell == 320221 then   -- Podtender
+            -- Ignore the event if this player has already procced Podtender.
+
+            if aura_env.ignorePodtender[unitGuid] then
+                return
             end
-        end
 
-        -- Ignore the event if the absorption is not from Podtender.
+            -- Ignore further Podtender absorptions on this player for the
+            -- remainder of its duration (plus some leeway time).
 
-        if absorbSpell ~= 320221 then
+            aura_env.ignorePodtender[unitGuid] = true
+            local aura_env = aura_env
+            C_Timer.After(15, function() aura_env.ignorePodtender[unitGuid] = nil end)
+
+            -- The 'SPELL_ABSORBED' and '_DAMAGE' events arrive in an inconsistent
+            -- order.  Delay the report in case the '_DAMAGE' event comes later.
+
+            C_Timer.After(1, function() WeakAuras.ScanEvents("WA_CAUSEOFDEATH_DEFERRED", unitGuid, unit) end)
+        else
+            -- Ignore this event.
+
             return
         end
-
-        -- Ignore the event if this player has already procced Podtender.
-
-        if aura_env.ignorePodtender[unitGuid] then
-            return
-        end
-
-        -- Ignore further Podtender absorptions on this player for the
-        -- remainder of its duration (plus some leeway time).
-
-        aura_env.ignorePodtender[unitGuid] = true
-        local aura_env = aura_env
-        C_Timer.After(15, function() aura_env.ignorePodtender[unitGuid] = nil end)
-
-        -- The 'SPELL_ABSORBED' and '_DAMAGE' events arrive in an inconsistent
-        -- order.  Delay the report in case the '_DAMAGE' event comes later.
-
-        C_Timer.After(1, function() WeakAuras.ScanEvents("WA_CAUSEOFDEATH_DEFERRED", unitGuid, unit) end)
     elseif subevent:find("_DAMAGE") ~= nil then
         -- Keep track of the damage taken by this group member.
 
