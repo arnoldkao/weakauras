@@ -285,8 +285,23 @@ function(event, ...)
         end
     elseif subevent == "SPELL_ABSORBED" then
         -- Check if this absorption is from Podtender.
+        --
+        -- The spell ID absorbing the damage may be either the 16th or 19th
+        -- argument, depending on the whether the attack being absorbed is a
+        -- spell.  If the absorbed attack is not a spell, then arguments 12
+        -- through 14 are the attacking spell ID, spell name, and spell school,
+        -- respectively.  Otherwise, these fields are omitted, and argument 12
+        -- is the attacking unit GUID.  Here, we check the type of argument 12.
+        -- If it is a number, then we assume it's a spell ID.  Otherwise, we
+        -- assume it's a unit GUID.
 
-        local absorbSpell = select(16, ...)
+        local absorbSpell = nil
+        local arg12 = select(12, ...)
+        if type(arg12) == "number" then
+            absorbSpell = select(19, ...)
+        else
+            absorbSpell = select(16, ...)
+        end
 
         if absorbSpell == 320221 then   -- Podtender
             -- Ignore the event if this player has already procced Podtender.
