@@ -4,6 +4,8 @@
 --
 -- - Add support for 'Forgeborn Reveries' (spell ID 326514) from Necrolords'
 --   Bonesmith Heirmir soulbind.
+--
+-- - Add option to truncate lists of repeated damage events.
 
 -------------------------------------------------------------------------------
 -- init
