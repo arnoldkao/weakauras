@@ -2,9 +2,6 @@
 -- - Count damage done to 'Regenerating Wildseed' (NPC ID 164589) during
 --   Podtender.
 --
--- - Add support for 'Forgeborn Reveries' (spell ID 326514) from Necrolords'
---   Bonesmith Heirmir soulbind.
---
 -- - Add option to truncate lists of repeated damage events.
 
 -------------------------------------------------------------------------------
@@ -284,7 +281,7 @@ function(event, ...)
             aura_env.ignoreUnitGuidDeath[unitGuid] = true
         end
     elseif subevent == "SPELL_ABSORBED" then
-        -- Check if this absorption is from Podtender.
+        -- Check if this absorption is from Podtender or Forgeborne Reveries.
         --
         -- The spell ID absorbing the damage may be either the 16th or 19th
         -- argument, depending on the whether the attack being absorbed is a
@@ -296,11 +293,22 @@ function(event, ...)
         -- assume it's a unit GUID.
 
         local absorbSpell = nil
+        local amount = nil
+        local spell = nil
+        local school = nil
+
         local arg12 = select(12, ...)
         if type(arg12) == "number" then
-            absorbSpell = select(19, ...)
+            -- The absorbed attack is a spell.
+
+            spell, _, school = select(12, ...)
+            absorbSpell, _, _, amount = select(19, ...)
         else
-            absorbSpell = select(16, ...)
+            -- The absorbed attack is a melee attack.
+
+            spell = "Melee"
+            school = 1  -- physical
+            absorbSpell, _, _, amount = select(16, ...)
         end
 
         if absorbSpell == 320221 then   -- Podtender
@@ -321,6 +329,25 @@ function(event, ...)
             -- order.  Delay the report in case the '_DAMAGE' event comes later.
 
             C_Timer.After(1, function() WeakAuras.ScanEvents("WA_CAUSEOFDEATH_DEFERRED", unitGuid, unit) end)
+        elseif absorbSpell == 326514 then   -- Forgeborne Reveries
+            -- This is the only combat log event emitted for this damage event
+            -- other than a '*_MISSED' event.  Add it to the damage history and
+            -- report the death.
+            --
+            -- NOTE: This implementation assumes that the '*_MISSED' event
+            -- always comes after this 'SPELL_ABSORBED' event.  More data is
+            -- needed to confirm or deny this assumption.
+
+            aura_env.recordDamageEvent(unit, amount, spell, school)
+
+            if not aura_env.isWipe() then
+                aura_env.reportCauseOfDeath(unitGuid, unit)
+            end
+
+            -- Also save this unit GUID so that we can ignore its impending
+            -- 'UNIT_DIED' event.
+
+            aura_env.ignoreUnitGuidDeath[unitGuid] = true
         else
             -- Ignore this event.
 
