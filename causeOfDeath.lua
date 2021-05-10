@@ -1,8 +1,4 @@
 -- TODO:
--- - Count absorbed (and maybe blocked) damage.  This involves:
---      1. checking '*_MISSED' subevents, and
---      2. enhancing '*_DAMAGE' subevent processing to add the absorbed amount.
---
 -- - Count damage done to 'Regenerating Wildseed' (NPC ID 164589) during
 --   Podtender.
 --
@@ -202,7 +198,7 @@ aura_env.recordDamageEvent = function(unit,
 end
 
 -------------------------------------------------------------------------------
--- trigger: WA_CAUSEOFDEATH_DEFERRED, CLEU:UNIT_DIED, CLEU:SPELL_AURA_APPLIED, CLEU:SWING_DAMAGE, CLEU:RANGE_DAMAGE, CLEU:SPELL_DAMAGE, CLEU:SPELL_PERIODIC_DAMAGE, CLEU:SPELL_BUILDING_DAMAGE, CLEU:ENVIRONMENTAL_DAMAGE, CLEU:SWING_INSTAKILL, CLEU:RANGE_INSTAKILL, CLEU:SPELL_INSTAKILL, CLEU:SPELL_PERIODIC_INSTAKILL, CLEU:SPELL_BUILDING_INSTAKILL, CLEU:ENVIRONMENTAL_INSTAKILL, CLEU:SPELL_ABSORBED
+-- trigger: WA_CAUSEOFDEATH_DEFERRED, CLEU:UNIT_DIED, CLEU:SPELL_AURA_APPLIED, CLEU:SWING_DAMAGE, CLEU:RANGE_DAMAGE, CLEU:SPELL_DAMAGE, CLEU:SPELL_PERIODIC_DAMAGE, CLEU:SPELL_BUILDING_DAMAGE, CLEU:ENVIRONMENTAL_DAMAGE, CLEU:SWING_MISSED, CLEU:RANGE_MISSED, CLEU:SPELL_MISSED, CLEU:SPELL_PERIODIC_MISSED, CLEU:SPELL_BUILDING_MISSED, CLEU:ENVIRONMENTAL_MISSED, CLEU:SWING_INSTAKILL, CLEU:RANGE_INSTAKILL, CLEU:SPELL_INSTAKILL, CLEU:SPELL_PERIODIC_INSTAKILL, CLEU:SPELL_BUILDING_INSTAKILL, CLEU:ENVIRONMENTAL_INSTAKILL, CLEU:SPELL_ABSORBED
 
 function(event, ...)
     -- Note that this function never triggers because we're not interested in
@@ -319,22 +315,54 @@ function(event, ...)
         local spell = nil
         local amount = nil
         local school = nil
+        local absorbed = nil
         local _ = nil
         if subevent:find("SWING_") then
             spell = "Melee"
-            amount, _, school = select(12, ...)
+            amount, _, school, _, _, absorbed = select(12, ...)
         elseif subevent:find("ENVIRONMENTAL_") then
             spell = select(12, ...)
-            amount, _, school = select(13, ...)
+            amount, _, school, _, _, absorbed = select(13, ...)
         else
             spell = select(12, ...)
             spell = tonumber(spell)
-            amount, _, school = select(15, ...)
+            amount, _, school, _, _, absorbed = select(15, ...)
         end
 
-        -- Record the damage event.
+        -- Record the damage event.  Include the absorbed amount in the damage
+        -- taken.
 
+        if absorbed ~= nil then
+            amount = amount + absorbed
+        end
         aura_env.recordDamageEvent(unit, amount, spell, school)
+    elseif subevent:find("_MISSED") ~= nil then
+        -- Extract the event's information.
+
+        local spell = nil
+        local school = nil
+        local amount = nil
+        local missType = nil
+        local _ = nil
+        if subevent:find("SWING_") then
+            spell = "Melee"
+            school = 1  -- physical
+            missType, _, amount = select(12, ...)
+        elseif subevent:find("ENVIRONMENTAL_") then
+            spell = select(12, ...)
+            school = 1  -- physical...?
+            missType, _, amount = select(13, ...)
+        else
+            spell, _, school = select(12, ...)
+            spell = tonumber(spell)
+            missType, _, amount = select(15, ...)
+        end
+
+        -- Record the damage event, but only if it's absorbed.
+
+        if missType == "ABSORB" then
+            aura_env.recordDamageEvent(unit, amount, spell, school)
+        end
     elseif subevent:find("_INSTAKILL") ~= nil then
         -- Replace the damage history table for this unit to contain just this
         -- instakill event.
