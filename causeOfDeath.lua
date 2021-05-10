@@ -67,6 +67,17 @@ aura_env.isWipe = function()
     return numDead >= wipeThreshold
 end
 
+aura_env.clearDamageHistory = function(unitGuid)
+    -- Clear the damage history for the specified 'unitGuid'.
+
+    local unitHistory = aura_env.damageHistory[unitGuid]
+
+    if unitHistory ~= nil then
+        unitHistory.events = {}
+        unitHistory.sum = 0
+    end
+end
+
 aura_env.reportCauseOfDeath = function(unitGuid, unit)
     -- Print a report for the cause of death for the specified 'unitGuid',
     -- which is also referred to by 'unit', and clear the damage taken history
@@ -131,8 +142,7 @@ aura_env.reportCauseOfDeath = function(unitGuid, unit)
 
         -- Clear the history.
 
-        unitHistory.events = {}
-        unitHistory.sum = 0
+        aura_env.clearDamageHistory(unitGuid)
     end
 
     print(deathReport)
@@ -243,6 +253,12 @@ function(event, ...)
 
         if aura_env.ignoreUnitGuidDeath[unitGuid] ~= nil then
             aura_env.ignoreUnitGuidDeath[unitGuid] = nil
+
+            -- Also clear the damage history, in case the unit racked up damage
+            -- taken events since their death was reported (e.g., during
+            -- Forgeborne Reveries).
+
+            aura_env.clearDamageHistory(unitGuid)
         elseif not aura_env.isWipe() then
             aura_env.reportCauseOfDeath(unitGuid, unit)
         end
