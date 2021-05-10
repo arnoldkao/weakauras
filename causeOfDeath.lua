@@ -158,6 +158,49 @@ aura_env.spellIsRecentlyApplied = function(unit, spellId)
     return applicationTime > GetTime() - 3
 end
 
+aura_env.recordDamageEvent = function(unit,
+                                      damageAmount,
+                                      damageSpell,
+                                      damageSchool)
+    -- Add a damage event with the specified 'damageAmount', 'damageSpell', and
+    -- 'damageSchool' to the damage history for the specified 'unit', then
+    -- prune old damage events from the history until it contains just enough
+    -- events to sum over the configured %MaxHP.
+
+    local unitGuid = UnitGUID(unit)
+
+    local unitHistory = aura_env.damageHistory[unitGuid]
+    if unitHistory == nil then
+        unitHistory = { events = {}, sum = 0 }
+        aura_env.damageHistory[unitGuid] = unitHistory
+    end
+
+    -- Add the new damage event to the history (at the end of the array).
+
+    unitHistory.sum = unitHistory.sum + damageAmount
+    table.insert(unitHistory.events,
+                 { amount = damageAmount,
+                   spell  = damageSpell,
+                   school = damageSchool })
+
+    -- Remove damage events from the history (at the beginning of the
+    -- array) until removing one more would reduce the sum below the
+    -- configured %MaxHP for history.
+
+    local maxHealth = UnitHealthMax(unit)
+    local sumCutoff = maxHealth * aura_env.config.percentHealthHistory / 100
+
+    while #unitHistory.events > 0 do
+        local sumAfterRemoval = unitHistory.sum - unitHistory.events[1].amount
+        if sumAfterRemoval < sumCutoff then
+            break
+        end
+
+        unitHistory.sum = sumAfterRemoval
+        table.remove(unitHistory.events, 1)
+    end
+end
+
 -------------------------------------------------------------------------------
 -- trigger: WA_CAUSEOFDEATH_DEFERRED, CLEU:UNIT_DIED, CLEU:SPELL_AURA_APPLIED, CLEU:SWING_DAMAGE, CLEU:RANGE_DAMAGE, CLEU:SPELL_DAMAGE, CLEU:SPELL_PERIODIC_DAMAGE, CLEU:SPELL_BUILDING_DAMAGE, CLEU:ENVIRONMENTAL_DAMAGE, CLEU:SWING_INSTAKILL, CLEU:RANGE_INSTAKILL, CLEU:SPELL_INSTAKILL, CLEU:SPELL_PERIODIC_INSTAKILL, CLEU:SPELL_BUILDING_INSTAKILL, CLEU:ENVIRONMENTAL_INSTAKILL, CLEU:SPELL_ABSORBED
 
@@ -271,14 +314,6 @@ function(event, ...)
             return
         end
     elseif subevent:find("_DAMAGE") ~= nil then
-        -- Keep track of the damage taken by this group member.
-
-        local unitHistory = aura_env.damageHistory[unitGuid]
-        if unitHistory == nil then
-            unitHistory = { events = {}, sum = 0 }
-            aura_env.damageHistory[unitGuid] = unitHistory
-        end
-
         -- Extract the event's information.
 
         local spell = nil
@@ -297,27 +332,9 @@ function(event, ...)
             amount, _, school = select(15, ...)
         end
 
-        -- Add the new damage event to the history (at the end of the array).
+        -- Record the damage event.
 
-        unitHistory.sum = unitHistory.sum + amount
-        table.insert(unitHistory.events, { amount = amount, spell = spell, school = school })
-
-        -- Remove damage events from the history (at the beginning of the
-        -- array) until removing one more would reduce the sum below the
-        -- configured %MaxHP for history.
-
-        local maxHealth = UnitHealthMax(unit)
-        local sumCutoff = maxHealth * aura_env.config.percentHealthHistory / 100
-
-        while #unitHistory.events > 0 do
-            local sumAfterRemoval = unitHistory.sum - unitHistory.events[1].amount
-            if sumAfterRemoval < sumCutoff then
-                break
-            end
-
-            unitHistory.sum = sumAfterRemoval
-            table.remove(unitHistory.events, 1)
-        end
+        aura_env.recordDamageEvent(unit, amount, spell, school)
     elseif subevent:find("_INSTAKILL") ~= nil then
         -- Replace the damage history table for this unit to contain just this
         -- instakill event.
