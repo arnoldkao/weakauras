@@ -6,7 +6,7 @@
 -------------------------------------------------------------------------------
 -- init
 C_ChatInfo.RegisterAddonMessagePrefix("HealerWatch_WA")
-aura_env.playerNameWithRealm = GetUnitName("player") .. '-' .. GetRealmName()
+aura_env.playerNameWithRealm = GetUnitName("player") .. '-' .. GetRealmName():gsub(" ", "")
 
 -- A table of the values that directly dictate the display.
 aura_env.calculated = {}
@@ -153,7 +153,7 @@ function(event, prefix, message, channel, sender)
         local name, realm = UnitName(healerUnit)
 
         if realm == nil then
-            realm = GetRealmName()
+            realm = GetRealmName():gsub(" ", "")
         end
 
         if (name .. "-" .. realm) == sender then

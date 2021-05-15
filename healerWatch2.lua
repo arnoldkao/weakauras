@@ -1,10 +1,12 @@
 -------------------------------------------------------------------------------
 -- init
 
-aura_env.nameToUnitMap = {}
-
 C_ChatInfo.RegisterAddonMessagePrefix("HealerWatch_WA")
-aura_env.playerNameWithRealm = GetUnitName("player") .. '-' .. GetRealmName()
+
+aura_env.nameToUnitMap = {}
+aura_env.realmNameSuffix = GetRealmName():gsub(" ", "")
+aura_env.playerNameWithRealm = (GetUnitName("player")
+                                    .. '-' .. aura_env.realmNameSuffix)
 
 function aura_env.canAccessUnitMana(unit)
     -- Return 'true' if we can query for 'unit's mana.  Otherwise, return
@@ -39,7 +41,7 @@ function(allstates, event, ...)
             if UnitGroupRolesAssigned(unit) == "HEALER" then
                 local unitName, unitRealm = UnitName(unit)
                 if unitRealm == nil then
-                    unitRealm = GetRealmName()
+                    unitRealm = aura_env.realmNameSuffix
                 end
 
                 local unitName = unitName .. "-" .. unitRealm
