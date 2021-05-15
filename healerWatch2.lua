@@ -23,8 +23,28 @@ function aura_env.getManaPercentValue(unit)
                 / (UnitPowerMax(unit, Enum.PowerType.Mana) or 1))
 end
 
+local drinkingBuffNames = {
+    ["Food & Drink"] = true,
+    ["Drink"] = true,
+    ["Refreshment"] = true
+}
+
+function aura_env.isDrinking(unit)
+    -- Return 'true' if the specified 'unit' is drinking.  Otherwise, return
+    -- 'false'.
+
+    for i = 1, 40 do
+        local name, _ = UnitBuff(unit, i)
+        if drinkingBuffNames[name] ~= nil then
+            return true
+        end
+    end
+
+    return false
+end
+
 -------------------------------------------------------------------------------
--- TSU: PLAYER_ROLES_ASSIGNED, UNIT_POWER_UPDATE, UNIT_HEALTH, CHAT_MSG_ADDON
+-- TSU: PLAYER_ROLES_ASSIGNED, UNIT_POWER_UPDATE, UNIT_HEALTH, CHAT_MSG_ADDON, UNIT_AURA
 
 function(allstates, event, ...)
     if event == "PLAYER_ROLES_ASSIGNED" then
@@ -125,6 +145,24 @@ function(allstates, event, ...)
         end
 
         return false
+    elseif event == "UNIT_AURA" then
+        local unit, _ = ...
+        local state = allstates[unit]
+        if state == nil then
+            return false
+        end
+
+        local wasDrinking = state["drinking"]
+        local isDrinking = aura_env.isDrinking(unit)
+
+        if wasDrinking ~= isDrinking then
+            state["changed"] = true
+            state["drinking"] = isDrinking
+
+            return true
+        end
+
+        return false
     end
 end
 
@@ -138,7 +176,8 @@ end
 
     -- Custom conditions:
     ["unit"] = "string",
-    ["dead"] = "bool"
+    ["dead"] = "bool",
+    ["drinking"] = "bool"
 }
 
 -------------------------------------------------------------------------------
