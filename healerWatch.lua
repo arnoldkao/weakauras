@@ -260,8 +260,7 @@ end
 -- mana publisher custom text function
 function()
     local now = GetTime()
-    if aura_env.lastTime ~= nil
-    and aura_env.lastTime + aura_env.config.period > now then
+    if aura_env.lastTime ~= nil and aura_env.lastTime + 2 > now then
         return ""
     end
     aura_env.lastTime = now
