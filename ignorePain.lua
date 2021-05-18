@@ -1,231 +1,196 @@
 -------------------------------------------------------------------------------
 -- init
 
-local numberOfDecimalPlaces = false
-if aura_env.config.numberOfDecimalPlaces == 2 then
-    numberOfDecimalPlaces = 0
-elseif aura_env.config.numberOfDecimalPlaces == 3 then
-    numberOfDecimalPlaces = 1
-elseif aura_env.config.numberOfDecimalPlaces == 4 then
-    numberOfDecimalPlaces = 2
-elseif aura_env.config.numberOfDecimalPlaces == 5 then
-    numberOfDecimalPlaces = 3
-end
+aura_env.hasNeverSurrender = select(4, GetTalentInfoByID(22384, 1))
 
-aura_env.shortenNumber = function(number)
+aura_env.singleState = {
+    ["icon"] = select(3, GetSpellInfo(190456)),
+    ["progressType"] = "static",
+    ["autoHide"] = not aura_env.config.alwaysShow,
+    ["show"] = aura_env.config.alwaysShow,
+    ["hasNeverSurrender"] = aura_env.hasNeverSurrender
+}
 
-    local shortenedNumber = number
+local getSpellTooltipAmount = function()
+    -- Return the absorption amount listed in Ignore Pain's spell tooltip.
 
-    local wasNegative = false
-    if number < 0 then
-        number = number * -1
-        wasNegative = true
-    end
+    local amount = GetSpellDescription(190456):match("%%.+%d")
 
-    local suffix = ""
-    if number >= 1000000 then
-        shortenedNumber = shortenedNumber / 1000000
-        suffix = "m"
-    elseif number >= 1000 then
-        shortenedNumber = shortenedNumber / 1000
-        suffix = "k"
-    end
+    -- On game restart, the returned description is sometimes an empty string,
+    -- so the match is 'nil'.  When it is, use an arbitrary, nonzero amount.
 
-    if not numberOfDecimalPlaces then
-        if shortenedNumber >= 100 then
-            shortenedNumber = string.format("%.0f", shortenedNumber)
-        elseif shortenedNumber >= 10 then
-            shortenedNumber = string.format("%.1f", shortenedNumber)
-        elseif shortenedNumber >= 1 then
-            shortenedNumber = string.format("%.2f", shortenedNumber)
-        end
+    if amount == nil then
+        return 1
     else
-        if number >= 1000 then
-            shortenedNumber = string.format("%."..numberOfDecimalPlaces.."f", shortenedNumber)
-        end
-    end
-
-    if aura_env.config.dontShortenThousands and (number >= 1000 and number < 10000) then
-        if wasNegative then
-            number = number * -1
-        end
-        return number
-    else
-        return shortenedNumber..suffix
+        amount = amount:gsub("%D","")
+        return tonumber(amount)
     end
 end
 
-aura_env.roundPercent = function(number)
-    local power = math.pow(10, aura_env.config.percentNumOfDecimalPlaces)
-    return math.floor(number * power) / power
+aura_env.calculateState = function(state)
+    -- Calculate the Ignore Pain values and store the results into the
+    -- specified 'state'.
+
+    -- Retrieve the state of the current Ignore Pain buff, if present.
+
+    local _, _, _, _, duration, expirationTime, _, _, _, _, _, _, _, _, _, currentAbsorb = WA_GetUnitBuff("player", 190456)
+
+    if currentAbsorb == nil then
+        currentAbsorb = 0
+    end
+
+    state["duration"] = duration
+    state["expirationTime"] = expirationTime
+    state["currentAbsorb"] = currentAbsorb
+    state["value"] = currentAbsorb
+
+    -- Retrieve how much absorption a new cast would give based on the tooltip
+    -- value.  Apply the Never Surrender multiplier, if applicable.
+
+    local castAbsorb = getSpellTooltipAmount()
+    if aura_env.hasNeverSurrender then
+        local neverSurrenderMultiplier = (
+            1.4 + (0.6 * (1 - UnitHealth("player") / UnitHealthMax("player"))))
+        castAbsorb = castAbsorb * neverSurrenderMultiplier
+    end
+
+    state["castAbsorb"] = castAbsorb
+
+    -- Provide additional calculated values, derived from the above retrieved
+    -- values.
+
+    local absorbCap = castAbsorb * 2
+    local additionalAbsorbOnCast = math.min(
+                                        math.max(0, absorbCap - currentAbsorb),
+                                        castAbsorb)
+
+    state["absorbCap"] = absorbCap
+    state["total"] = absorbCap
+    state["percentOfCap"] = currentAbsorb / absorbCap * 100
+    state["percentOfMaxHp"] = currentAbsorb / UnitHealthMax("player") * 100
+    state["additionalAbsorbOnCast"] = additionalAbsorbOnCast
+    state["castBenefitPercent"] = additionalAbsorbOnCast / castAbsorb * 100
 end
 
 -------------------------------------------------------------------------------
--- trigger activation
+-- trigger (TSU): UNIT_AURA:player, UNIT_HEALTH:player, PLAYER_EQUIPMENT_CHANGED, PLAYER_TALENT_UPDATE
 
-function(triggers)
-    return triggers[1]
-end
+function(allstates, event, ...)
+    -- Ignore the 'UNIT_HEALTH' event if the player doesn't have the Never
+    -- Surrender talent.
 
--------------------------------------------------------------------------------
--- trigger1: status: UNIT_AURA:player
-
-function(event, unit)
-    if unit ~= "player" then
+    if event == "UNIT_HEALTH" and not aura_env.hasNeverSurrender then
         return false
     end
 
-    local currentIP = select(16, WA_GetUnitBuff("player", 190456)) or 0
-    aura_env.currentIP = currentIP
+    -- Point 'allstates[1]' to 'aura_env.singleState'.  Note that we use a TSU
+    -- even though we have only one state because we include custom variables.
 
-    if aura_env.config.alwaysShow then
+    local state = allstates[1]
+    if state == nil then
+        state = aura_env.singleState
+        allstates[1] = state
+    end
+
+    -- Update the 'autoHide' and 'show' values on receipt of the 'OPTIONS'
+    -- event.
+
+    local alwaysShow = aura_env.config.alwaysShow
+    if event == "OPTIONS" then
+
+        state["autoHide"] = not alwaysShow
+        state["show"] = alwaysShow or (state["value"] ~= 0)
+
+        state["changed"] = true
         return true
     end
 
-    return currentIP ~= 0
-end
+    -- On 'TALENT_UPDATE_UPDATE', re-check whether the player has the Never
+    -- Surrender talent, but continue to update the state.
 
--------------------------------------------------------------------------------
--- trigger1: untrigger
+    if event == "PLAYER_TALENT_UPDATE" then
+        local hasNeverSurrender = select(4, GetTalentInfoByID(22384, 1))
 
-function(arg1, arg2)
-    if arg1 == "UNIT_AURA" and arg2 ~= "player" then
-        return false
+        aura_env.hasNeverSurrender = hasNeverSurrender
+        state["hasNeverSurrender"] = hasNeverSurrender
     end
 
-    if aura_env.config.alwaysShow then
+    -- Calculate the state.
+
+    local wasShown = state["show"]
+    aura_env.calculateState(state)
+
+    -- Do not update the clone if it was hidden and is to remain hidden.
+
+    if not alwaysShow and not wasShown and state["value"] == 0 then
         return false
-    end
-
-    return aura_env.currentIP == 0
-end
-
--------------------------------------------------------------------------------
--- trigger1: duration
-
-function()
-    -- Never Surrender
-    local curHP = UnitHealth("player")
-    local maxHP = UnitHealthMax("player")
-    local percHPMissing = (maxHP - curHP) / maxHP
-    local NSPerc = aura_env.hasNeverSurrender and (1 + percHPMissing) or 1
-
-    local currentIP = aura_env.currentIP or 0
-
-    local descriptionAmount = GetSpellDescription(190456):match("%%.+%d")
-    if descriptionAmount == nil then
-        -- On game restart, the returned description is sometimes an empty
-        -- string, so the match is 'nil'.  When it is, use an arbitrary,
-        -- nonzero amount.
-        descriptionAmount = 1
     else
-        -- Note that 'string.gsub' returns two values, and 'tonumber' accepts
-        -- an optional second parameter, so we do not inline the call to
-        -- 'tonumber'.
-        descriptionAmount = descriptionAmount:gsub("%D","")
-        descriptionAmount = tonumber(descriptionAmount)
+        state["show"] = (alwaysShow or state["value"] ~= 0)
+
+        state["changed"] = true
+        return true
     end
-
-    local castIP = descriptionAmount * NSPerc
-
-    local IPCap = math.floor(castIP * 1.3)
-
-    local additionalAbsorb = IPCap - currentIP
-
-    -- account for a tiny bit of mathematical rounding
-    if additionalAbsorb == -1 or additionalAbsorb == -2 then
-        IPCap = currentIP
-        additionalAbsorb = 0
-    end
-
-    local percentOfCap = currentIP / IPCap * 100
-    percentOfCap = aura_env.roundPercent(percentOfCap)
-
-    local percentOfMaxHP = currentIP / UnitHealthMax("player") * 100
-    percentOfMaxHP = aura_env.roundPercent(percentOfMaxHP)
-
-    aura_env.calc = {}
-    aura_env.calc.currentIP = currentIP
-    aura_env.calc.castIP = castIP
-    aura_env.calc.IPCap = IPCap
-    aura_env.calc.percentOfCap = percentOfCap
-    aura_env.calc.additionalAbsorb = additionalAbsorb
-    aura_env.calc.percentOfMaxHP = percentOfMaxHP
-
-    return percentOfCap, 100, true
 end
 
 -------------------------------------------------------------------------------
--- trigger2: status: PLAYER_TALENT_UPDATE
+-- custom variables
 
-function()
-    aura_env.hasNeverSurrender = select(4, GetTalentInfoByID(22384, 1))
-end
+{
+    ---------------------------------------------------------------------------
+    -- CUSTOM STATE VARIABLES
 
--------------------------------------------------------------------------------
--- custom text
+    ["hasNeverSurrender"] = "bool",
+        -- 'true' if the player has the Never Surrender talent.  Otherwise,
+        -- 'false'.
 
-function()
-    if not aura_env.calc then
-        return "", ""
-    end
+    ["currentAbsorb"] = "number",
+        -- The amount of absorption currently active on the player from Ignore
+        -- Pain, taken from the Ignore Pain buff tooltip, or 0 if the buff is
+        -- absent.
+        --
+        -- This is an alias of 'value'.
 
-    local currentIP = aura_env.calc.currentIP
-    local castIP = aura_env.calc.castIP
-    local IPCap = aura_env.calc.IPCap
-    local percentOfCap = string.format("%."..aura_env.config.percentNumOfDecimalPlaces.."f%%", aura_env.calc.percentOfCap)
-    local additionalAbsorb = aura_env.calc.additionalAbsorb
-    local percentOfMaxHP = string.format("%."..aura_env.config.percentNumOfDecimalPlaces.."f%%", aura_env.calc.percentOfMaxHP)
+    ["castAbsorb"] = "number",
+        -- The additional amount of absorption that Ignore Pain would give if
+        -- cast right now.  This is equal to the value in the Ignore Pain spell
+        -- tooltip, increased by the Never Surrender multiplier, if applicable.
+        -- Note that this value does not factor in the absorption cap.  To see
+        -- how much "real" absorption would be added with the absorption cap
+        -- factored in, see 'additionalAbsorbOnCast'.
 
-    if aura_env.config.shortenText then
-        currentIP = aura_env.shortenNumber(currentIP)
-        additionalAbsorb = aura_env.shortenNumber(additionalAbsorb)
-    end
+    ["absorbCap"] = "number",
+        -- Formula: 'castAbsorb * 2'
+        --
+        -- The max amount of absorbtion that the player can build up right now.
+        -- If 'currentAbsorb' is greater than 'absorbCap', then a re-cast would
+        -- refresh the duration on Ignore Pain but would not change
+        -- 'currentAbsorb'.
+        --
+        -- This is an alias of 'total'.
 
-    local text1 = ""
+    ["percentOfCap"] = "number",
+        -- Formula: 'currentAbsorb / absorbCap * 100'
 
-    if aura_env.config.text1 == 1 then
-        text1 = currentIP
-    elseif aura_env.config.text1 == 2 then
-        text1 = percentOfCap
-    elseif aura_env.config.text1 == 3 then
-        text1 = additionalAbsorb
-    elseif aura_env.config.text1 == 4 then
-        text1 = percentOfMaxHP
-    end
+    ["percentOfMaxHp"] = "number",
+        -- Formula: 'currentAbsorb / UnitHealthMax("player") * 100'
 
-    local text2 = ""
+    ["additionalAbsorbOnCast"] = "number",
+        -- Formula: 'math.min(math.max(0, absorbCap - currentAbsorb), castAbsorb)'
+        --
+        -- The amount of absorption that would be added to 'currentAbsorb' if
+        -- the player were to cast Ignore Pain right now.
 
-    if aura_env.config.text2 == 1 then
-        text2 = currentIP
-    elseif aura_env.config.text2 == 2 then
-        text2 = percentOfCap
-    elseif aura_env.config.text2 == 3 then
-        text2 = additionalAbsorb
-    elseif aura_env.config.text2 == 4 then
-        text2 = percentOfMaxHP
-    end
+    ["castBenefitPercent"] = "number",
+        -- Formula: 'additionalAbsorbOnCast / castAbsorb * 100'
+        --
+        -- The percentage amount of 'castAbsorb' that the player would benefit
+        -- from if he/she were to cast Ignore Pain right now.
 
-    return text1, text2
-end
+    ---------------------------------------------------------------------------
+    -- DEFAULT STATE VARIABLES
 
--------------------------------------------------------------------------------
--- animation color
-
-function(progress, r1, g1, b1, a1, r2, g2, b2, a2)
-    if not aura_env.calc then
-        return 0, 0, 0, 0
-    end
-
-    local currentIP = aura_env.calc.currentIP
-    local castIP = aura_env.calc.castIP
-    local IPCap = aura_env.calc.IPCap
-
-    if currentIP + castIP <= IPCap then
-        return aura_env.config.fullCastColor[1], aura_env.config.fullCastColor[2], aura_env.config.fullCastColor[3], aura_env.config.fullCastColor[4]
-    elseif IPCap - currentIP > 0 then
-        return aura_env.config.capColor[1], aura_env.config.capColor[2], aura_env.config.capColor[3], aura_env.config.capColor[4]
-    elseif IPCap - currentIP <= 0 then
-        return aura_env.config.clipColor[1], aura_env.config.clipColor[2], aura_env.config.clipColor[3], aura_env.config.clipColor[4]
-    end
-end
+    ["expirationTime"] = true,
+    ["duration"] = true,
+    ["value"] = true,
+    ["total"] = true
+}
