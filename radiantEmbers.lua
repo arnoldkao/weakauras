@@ -32,6 +32,20 @@ aura_env.cancelExpirationTimer = function()
     end
 end
 
+aura_env.setShow = function()
+    -- Set the 'singleState.show' value to 'true' or 'false' depending on
+    -- 'singleState.ashenHallowActive' and 'aura_env.config.showWhen'.
+
+    local state = singleState
+    local showWhen = aura_env.config.showWhen
+
+    if showWhen == 1 then       -- Always
+        state.show = true
+    elseif showWhen == 2 then   -- Only when active
+        state.show = state.ashenHallowActive
+    end
+end
+
 -------------------------------------------------------------------------------
 -- trigger (TSU): PLAYER_EQUIPMENT_CHANGED, CLEU:SPELL_CAST_SUCCESS, SPELL_COOLDOWN_CHANGED, SPELL_COOLDOWN_READY, WA_RADIANTEMBERS_ASHENHALLOWEXPIRED, WA_RADIANTEMBERS_DUMMY
 
@@ -65,6 +79,8 @@ function(allstates, event, ...)
         state.duration = duration
         state.ashenHallowOnCooldown = true
         state.ashenHallowActive = true
+
+        aura_env.setShow()
 
         aura_env.cancelExpirationTimer()
 
@@ -102,6 +118,8 @@ function(allstates, event, ...)
 
             state.ashenHallowActive = false
 
+            aura_env.setShow()
+
             state.changed = true
             return true
         end
@@ -115,6 +133,8 @@ function(allstates, event, ...)
         state.expirationTime = cooldownStart + cooldownDuration
         state.duration = cooldownDuration
         state.ashenHallowActive = false
+
+        aura_env.setShow()
 
         state.changed = true
         return true
@@ -146,7 +166,8 @@ function(allstates, event, ...)
         state.ashenHallowOnCooldown = (cooldownStart ~= 0)
         state.ashenHallowActive = false
 
-        state.show = true
+        aura_env.setShow()
+
         state.changed = true
         return true
     end
