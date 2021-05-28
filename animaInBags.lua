@@ -86,9 +86,23 @@ aura_env.getCurrency = function()
 end
 
 -------------------------------------------------------------------------------
--- trigger (TSU): BAG_UPDATE_DELAYED, CURRENCY_DISPLAY_UPDATE, BANKFRAME_OPENED, PLAYERBANKSLOTS_CHANGED, BANKFRAME_CLOSED
+-- trigger (TSU): WA_ANIMAINBAGS_DUMMYSTART, BAG_UPDATE_DELAYED, CURRENCY_DISPLAY_UPDATE, BANKFRAME_OPENED, PLAYERBANKSLOTS_CHANGED, BANKFRAME_CLOSED, WA_ANIMAINBAGS_DUMMYSTOP
 
 function(allstates, event, ...)
+    if event == "WA_ANIMAINBAGS_DUMMYSTART" then
+        aura_env.dummy = true
+        return false
+    elseif event == "WA_ANIMAINBAGS_DUMMYSTOP" then
+        aura_env.dummy = false
+    end
+
+    -- Ignore all dummy events except the last one, "WA_ANIMAINBAGS_DUMMYSTOP",
+    -- for which we'll recalculate state.
+
+    if aura_env.dummy and event ~= "WA_ANIMAINBAGS_DUMMYSTOP" then
+        return false
+    end
+
     if event == 'CURRENCY_DISPLAY_UPDATE' then
         local currencyId, _ = ...
         if currencyId ~= 1813 then
@@ -109,12 +123,12 @@ function(allstates, event, ...)
     state.inBackpack = aura_env.getInBackpack()
 
     if event == "BANKFRAME_OPENED" then
-        state.bankIsOpen = true
+        aura_env.bankIsOpen = true
     elseif event == "BANKFRAME_CLOSED" then
-        state.bankIsOpen = false
+        aura_env.bankIsOpen = false
     end
 
-    if state.bankIsOpen then
+    if aura_env.bankIsOpen then
         state.inBank = aura_env.getInBank()
     end
 
