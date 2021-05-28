@@ -1,75 +1,125 @@
--- display custom text
-function()
-    return aura_env.animaAsCurrency, aura_env.animaInBags, aura_env.animaTotal
-end
-
 --------------------------------------------------------------------------------
--- trigger (status): BAG_UPDATE_DELAYED, CURRENCY_DISPLAY_UPDATE
--- based on https://wago.io/d3T2l8gld/3
-function(event, ...)
-    if event == 'CURRENCY_DISPLAY_UPDATE' then
-        local currencyId, _ = ...
-        if currencyId ~= 1813 then
-            return true
-        end
-    end
+-- init
 
-    local animaAsCurrency = 0
-    local currencyInfo = C_CurrencyInfo.GetCurrencyInfo(1813)
-    if currencyInfo ~= nil then
-        animaAsCurrency = currencyInfo.quantity
-    end
+aura_env.singleState = {}
 
-    local animaInBags = 0
+local getAnimaInBagSlot = function(bag, slot)
+    -- Return the amount of anima held in the item in the specified 'bag' and
+    -- 'slot'.
+    --
+    -- based on https://wago.io/d3T2l8gld/3
 
-    for bag = 0, NUM_BAG_SLOTS do
-        local bagSize = GetContainerNumSlots(bag)
-        for slot = 1, bagSize do
-            local _, stack, _, quality = GetContainerItemInfo(bag, slot)
-            if stack then
-                local itemId = GetContainerItemID(bag, slot);
-                if C_Item.IsAnimaItemByID(itemId) then
-                    if (quality == 2) and (itemId ~= 183727) then
-                        -- green, but not 'Resonance of Conflict'
+    local _, stack, _, quality = GetContainerItemInfo(bag, slot)
+    if stack then
+        local itemId = GetContainerItemID(bag, slot);
+        if C_Item.IsAnimaItemByID(itemId) then
+            if itemId == 183727 then
+                -- 'Resonance of Conflict'
 
-                        animaInBags = animaInBags + 5 * stack
-                    end
+                return 3 * stack
+            elseif (quality == 2) then
+                -- green, but not 'Resonance of Conflict'
 
-                    if quality == 3 then
-                        -- blue
+                return 5 * stack
+            elseif quality == 3 then
+                -- blue
 
-                        animaInBags = animaInBags + 35 * stack
-                    end
+                return 35 * stack
+            elseif quality == 4 then
+                -- purple
 
-                    if quality == 4 then
-                        -- purple
-
-                        animaInBags = animaInBags + 250 * stack
-                    end
-
-                    if itemId == 183727 then
-                        -- 'Resonance of Conflict'
-
-                        animaInBags = animaInBags + 3 * stack
-                    end
-                end
+                return 250 * stack
             end
         end
     end
 
-    aura_env.animaInBags = animaInBags
-    aura_env.animaAsCurrency = animaAsCurrency
-    aura_env.animaTotal = animaInBags + animaAsCurrency
+    return 0
+end
+
+local getAnimaInBag = function(bag)
+    -- Return the amount of anima held in the specified 'bag'.
+
+    local amount = 0
+
+    local bagSize = GetContainerNumSlots(bag)
+    for slot = 1, bagSize do
+        amount = amount + getAnimaInBagSlot(bag, slot)
+    end
+
+    return amount
+end
+
+aura_env.getInBackpack = function()
+    -- Return the amount of anima that the player has in his/her backpack.
+
+    local amount = 0
+
+    for bag = 0, NUM_BAG_SLOTS do
+        amount = amount + getAnimaInBag(bag)
+    end
+
+    return amount
+end
+
+aura_env.getInBank = function()
+    -- Return the amount of anima in the primary bank (bag -1) and in all bank
+    -- bags (bags 5-11)
+
+    local amount = getAnimaInBag(-1)
+
+    for bag = NUM_BAG_SLOTS + 1, NUM_BAG_SLOTS + NUM_BANKBAGSLOTS do
+        amount = amount + getAnimaInBag(bag)
+    end
+
+    return amount
+end
+
+aura_env.getCurrency = function()
+    -- Return the amount of anima the player has as currency.
+
+    local currencyInfo = C_CurrencyInfo.GetCurrencyInfo(1813)
+    if currencyInfo == nil then
+        return 0
+    end
+
+    return currencyInfo.quantity
+end
+
+--------------------------------------------------------------------------------
+-- trigger (TSU): BAG_UPDATE_DELAYED, CURRENCY_DISPLAY_UPDATE, BANKFRAME_OPENED, PLAYERBANKSLOTS_CHANGED
+
+function(allstates, event, ...)
+    if event == 'CURRENCY_DISPLAY_UPDATE' then
+        local currencyId, _ = ...
+        if currencyId ~= 1813 then
+            return false
+        end
+    end
+
+    local state = allstates[1]
+    if state == nil then
+        state = aura_env.singleState
+        allstates[1] = state
+    end
+
+    state.changed = true
+    state.show = true
+
+    state.currency = aura_env.getCurrency()
+    state.inBackpack = aura_env.getInBackpack()
+    state.inBank = aura_env.getInBank()
 
     return true
 end
 
---------------------------------------------------------------------------------
--- name info
--- This is here to force a trigger update.
-function()
-    return GetTime()
-end
+-------------------------------------------------------------------------------
+-- custom variables
+
+{
+    ["currency"] = "number",
+    ["inBackpack"] = "number",
+    ["inBank"] = "number",
+}
 
 -------------------------------------------------------------------------------
 -- custom anchor
