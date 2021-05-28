@@ -1,4 +1,4 @@
---------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
 -- init
 
 aura_env.singleState = {}
@@ -65,7 +65,7 @@ aura_env.getInBank = function()
     -- Return the amount of anima in the primary bank (bag -1) and in all bank
     -- bags (bags 5-11)
 
-    local amount = getAnimaInBag(-1)
+    local amount = getAnimaInBag(BANK_CONTAINER)
 
     for bag = NUM_BAG_SLOTS + 1, NUM_BAG_SLOTS + NUM_BANKBAGSLOTS do
         amount = amount + getAnimaInBag(bag)
@@ -85,8 +85,8 @@ aura_env.getCurrency = function()
     return currencyInfo.quantity
 end
 
---------------------------------------------------------------------------------
--- trigger (TSU): BAG_UPDATE_DELAYED, CURRENCY_DISPLAY_UPDATE, BANKFRAME_OPENED, PLAYERBANKSLOTS_CHANGED
+-------------------------------------------------------------------------------
+-- trigger (TSU): BAG_UPDATE_DELAYED, CURRENCY_DISPLAY_UPDATE, BANKFRAME_OPENED, PLAYERBANKSLOTS_CHANGED, BANKFRAME_CLOSED
 
 function(allstates, event, ...)
     if event == 'CURRENCY_DISPLAY_UPDATE' then
@@ -107,7 +107,16 @@ function(allstates, event, ...)
 
     state.currency = aura_env.getCurrency()
     state.inBackpack = aura_env.getInBackpack()
-    state.inBank = aura_env.getInBank()
+
+    if event == "BANKFRAME_OPENED" then
+        state.bankIsOpen = true
+    elseif event == "BANKFRAME_CLOSED" then
+        state.bankIsOpen = false
+    end
+
+    if state.bankIsOpen then
+        state.inBank = aura_env.getInBank()
+    end
 
     return true
 end
