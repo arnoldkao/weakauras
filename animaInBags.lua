@@ -85,6 +85,16 @@ aura_env.getCurrency = function()
     return currencyInfo.quantity
 end
 
+aura_env.calculateCombinations = function()
+    -- Update 'aura_env.singleState' with various sums of the individual anima
+    -- values.
+
+    local state = aura_env.singleState
+
+    state.inBackpackAndBank = state.inBackpack + (state.inBank or 0)
+    state.animaTotal = state.currency + state.inBackpack + (state.inBank or 0)
+end
+
 -------------------------------------------------------------------------------
 -- trigger (TSU): WA_ANIMAINBAGS_DUMMYSTART, BAG_UPDATE_DELAYED, CURRENCY_DISPLAY_UPDATE, BANKFRAME_OPENED, PLAYERBANKSLOTS_CHANGED, BANKFRAME_CLOSED, WA_ANIMAINBAGS_DUMMYSTOP
 
@@ -132,6 +142,8 @@ function(allstates, event, ...)
         state.inBank = aura_env.getInBank()
     end
 
+    aura_env.calculateCombinations()
+
     return true
 end
 
@@ -142,6 +154,11 @@ end
     ["currency"] = "number",
     ["inBackpack"] = "number",
     ["inBank"] = "number",
+
+    -- Sums of the above
+
+    ["inBackpackAndBank"] = "number",
+    ["animaTotal"] = "number",
 }
 
 -------------------------------------------------------------------------------
