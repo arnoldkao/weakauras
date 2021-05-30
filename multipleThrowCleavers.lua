@@ -1,7 +1,17 @@
 -------------------------------------------------------------------------------
 -- init
 
-aura_env.groupUnits = {}    -- A map from unit GUID to group unit ID.
+-- A map from unit GUID to group unit ID.
+
+aura_env.groupUnits = {}
+
+-- A map from spell target GUIDs to their states.  These states are always
+-- inserted into the TSU's 'allstates' table, but we keep an extra reference
+-- here so that the states are not deleted when their 'show' values are 'false'
+-- (because we want to show the clone only if the 'stacks' value is greater
+-- than 1).
+
+aura_env.allstates = {}
 
 -------------------------------------------------------------------------------
 -- trigger (TSU): UNIT_SPELLCAST_START, UNIT_SPELLCAST_STOP, GROUP_ROSTER_UPDATE
@@ -22,13 +32,13 @@ function(allstates, event, ...)
         local casterGuid = UnitGUID(casterUnit)
         local targetGuid = UnitGUID(casterUnit .. "target")
 
-        local state = allstates[targetGuid]
+        local state = aura_env.allstates[targetGuid]
         if state == nil then
             state = {
                 ["stacks"] = 0,
                 ["casterGuids"] = {}
             }
-            allstates[targetGuid] = state
+            aura_env.allstates[targetGuid] = state
         end
 
         state.unit = aura_env.groupUnits[targetGuid]
@@ -46,10 +56,15 @@ function(allstates, event, ...)
                 state.casterGuids[casterGuid] = nil
 
                 state.changed = true
+
+                if state.stacks == 0 then
+                    aura_env.allstates[targetGuid] = nil
+                end
             end
         end
 
-        state.show = (state.stacks > 0)
+        state.show = (state.stacks > 1)
+        allstates[targetGuid] = state
 
         print(targetGuid, spellId, state.stacks)
 
