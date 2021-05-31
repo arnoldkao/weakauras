@@ -1,74 +1,99 @@
 -------------------------------------------------------------------------------
 -- init
 
--- A map from unit GUID to group unit ID.
+aura_env.throwingUnits = {} -- A set of unit GUIDs casting "Throw Cleaver".
+aura_env.enemyUnits = {}    -- A map from unit GUID to a nameplate unit ID.
+aura_env.groupUnits = {}    -- A map from unit GUID to group unit ID.
 
-aura_env.groupUnits = {}
+aura_env.update = function(allstates)
+    -- Cross-reference 'aura_env.throwingUnits', 'aura_env.enemyUnits', and
+    -- 'aura_env.groupUnits' to update the specified 'allstates'.  Return
+    -- 'true' if any states are changed.  Otherwise, return 'false'.
 
--- A map from spell target GUIDs to their states.  These states are always
--- inserted into the TSU's 'allstates' table, but we keep an extra reference
--- here so that the states are not deleted when their 'show' values are 'false'
--- (because we want to show the clone only if the 'stacks' value is greater
--- than 1).
+    -- Iterate through 'aura_env.throwingUnits' to put together a map from
+    -- group unit GUID to the number of enemies throwing cleaver at him/her.
 
-aura_env.allstates = {}
+    local targets = {}
+
+    for throwerGuid, _ in pairs(aura_env.throwingUnits) do
+        local throwerId = aura_env.enemyUnits[throwerGuid]
+        if throwerId ~= nil then
+            local targetGuid = UnitGUID(throwerId .. "target")
+            if targetGuid ~= nil then
+                targets[targetGuid] = (targets[targetGuid] or 0) + 1
+            end
+        end
+    end
+
+    local changedAny = false
+
+    for targetGuid, numThrowing in pairs(targets) do
+        local state = allstates[targetGuid]
+
+        if state == nil then
+            if numThrowing > 1 then
+                allstates[targetGuid] = {
+                    ["stacks"] = numThrowing,
+                    ["show"] = true,
+                    ["changed"] = true
+                }
+
+                changedAny = true
+            end
+        else
+            if state.stacks ~= numThrowing
+            or state.show ~= (numThrowing > 1) then
+                state.stacks = numThrowing
+                state.show = (numThrowing > 1)
+                state.changed = true
+
+                changedAny = true
+            end
+        end
+    end
+
+    return changedAny
+end
 
 -------------------------------------------------------------------------------
--- trigger (TSU): UNIT_SPELLCAST_START, UNIT_SPELLCAST_STOP, GROUP_ROSTER_UPDATE
+-- trigger (TSU): GROUP_ROSTER_UPDATE, CLEU:SPELL_CAST_START, CLEU:SPELL_CAST_SUCCESS, CLEU:SPELL_CAST_FAILED, NAME_PLATE_UNIT_ADDED, NAME_PLATE_UNIT_REMOVED
 
 function(allstates, event, ...)
-    if event == "UNIT_SPELLCAST_START" or event == "UNIT_SPELLCAST_STOP" then
-        local casterUnit, _, spellId = ...
-
-        -- if spellId ~= 323496 then
-        if spellId ~= 8936 then
+    if event == "NAME_PLATE_UNIT_ADDED"
+    or event == "NAME_PLATE_UNIT_REMOVED" then
+        local unitId = ...
+        if unitId == nil then
             return false
         end
 
-        if not UnitExists(casterUnit .. "target") then
+        local unitGuid = UnitGUID(unitId)
+        local npcId = select(6, strsplit("-", unitGuid))
+        npcId = tonumber(npcId)
+
+        if npcId ~= 173044          -- Stitching Assistant
+        and npcId ~= 167731         -- Separation Assistant
+        and npcId ~= 165872 then    -- Flesh Crafter
             return false
         end
 
-        local casterGuid = UnitGUID(casterUnit)
-        local targetGuid = UnitGUID(casterUnit .. "target")
+        -- Map from this unit's GUID to the unit ID.
 
-        local state = aura_env.allstates[targetGuid]
-        if state == nil then
-            state = {
-                ["stacks"] = 0,
-                ["casterGuids"] = {}
-            }
-            aura_env.allstates[targetGuid] = state
+        aura_env.enemyUnits[unitGuid] = unitId
+    elseif event == "COMBAT_LOG_EVENT_UNFILTERED" then
+        local _, subevent, _, casterGuid = ...
+        local spellId = select(12, ...)
+
+        if spellId ~= 323496 then
+            return false
         end
 
-        state.unit = aura_env.groupUnits[targetGuid]
+        -- Record this unit GUID as casting or not casting "Throw Cleaver".
 
-        if event == "UNIT_SPELLCAST_START" then
-            if state.casterGuids[casterGuid] == nil then
-                state.stacks = state.stacks + 1
-                state.casterGuids[casterGuid] = true
-
-                state.changed = true
-            end
-        else    -- event == "UNIT_SPELLCAST_STOP"
-            if state.casterGuids[casterGuid] ~= nil then
-                state.stacks = state.stacks - 1
-                state.casterGuids[casterGuid] = nil
-
-                state.changed = true
-
-                if state.stacks == 0 then
-                    aura_env.allstates[targetGuid] = nil
-                end
-            end
+        if subevent == "SPELL_CAST_START" then
+            aura_env.throwingUnits[casterGuid] = true
+        else    -- subevent == "SPELL_CAST_SUCCESS" or subevent == "SPELL_CAST_FAILED"
+            aura_env.throwingUnits[casterGuid] = nil
         end
-
-        state.show = (state.stacks > 1)
-        allstates[targetGuid] = state
-
-        print(targetGuid, spellId, state.stacks)
-
-        return state.changed
     elseif event == "GROUP_ROSTER_UPDATE" then
         -- Update the lookup map from unit GUID to group unit ID.
 
@@ -77,15 +102,7 @@ function(allstates, event, ...)
             groupUnits[UnitGUID(unit)] = unit
         end
         aura_env.groupUnits = groupUnits
-
-        -- Iterate through each existing state in 'allstates' to update its
-        -- 'unit' value.
-
-        for unitGuid, state in pairs(allstates) do
-            state.unit = groupUnits[unitGuid]
-            state.changed = true
-        end
-
-        return true
     end
+
+    return aura_env.update(allstates)
 end
