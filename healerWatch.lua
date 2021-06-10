@@ -48,10 +48,10 @@ function aura_env.isDrinking(unit)
 end
 
 -------------------------------------------------------------------------------
--- TSU: PLAYER_ROLES_ASSIGNED, UNIT_POWER_UPDATE, UNIT_DISPLAYPOWER, UNIT_HEALTH, CHAT_MSG_ADDON, UNIT_AURA
+-- TSU: PLAYER_ROLES_ASSIGNED, UPDATE_INSTANCE_INFO, UNIT_POWER_UPDATE, UNIT_DISPLAYPOWER, UNIT_HEALTH, CHAT_MSG_ADDON, UNIT_AURA
 
 function(allstates, event, ...)
-    if event == "PLAYER_ROLES_ASSIGNED" then
+    if event == "PLAYER_ROLES_ASSIGNED" or event == "UPDATE_INSTANCE_INFO" then
         -- Clear and repopulate 'allstates' and 'aura_env.nameToUnitMap' with
         -- the healers in the group.
 
@@ -61,7 +61,22 @@ function(allstates, event, ...)
 
         local nameToUnitMap = {}
 
+        -- Limit the raid group iteration to the first 20 members if the player
+        -- is in a mythic raid instance.
+        --
+        -- TODO: Add smarts to stop at "raid22" instead of at "raid21" if
+        -- "raid1" is acting as the 21st raider.
+
+        local stopOnUnit = nil
+        if select(3, GetInstanceInfo()) == 16 then
+            stopOnUnit = "raid21"
+        end
+
         for unit in WA_IterateGroupMembers() do
+            if unit == stopOnUnit then
+                break
+            end
+
             if UnitGroupRolesAssigned(unit) == "HEALER" then
                 local unitName, unitRealm = UnitName(unit)
                 if unitRealm == nil then
