@@ -19,8 +19,12 @@ function aura_env.getManaPercentValue(unit)
     -- Return the percentage mana that the specified 'unit' has, out of 100.
     -- If 'unit's mana cannot be retrieved, return 0 instead.
 
-    return (UnitPower(unit, Enum.PowerType.Mana) * 100
-                / (UnitPowerMax(unit, Enum.PowerType.Mana) or 1))
+    local maxMana = UnitPowerMax(unit, Enum.PowerType.Mana)
+    if maxMana == 0 then
+        return 0
+    end
+
+    return (UnitPower(unit, Enum.PowerType.Mana) * 100 / maxMana)
 end
 
 local drinkingBuffNames = {
