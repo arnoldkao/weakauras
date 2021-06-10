@@ -1,3 +1,15 @@
+--[[ Testing 5/20
+
+- cast with lego equipped, then unequip lego
+    - ashen has 45 sec duration
+    - running out doesn't give CDR or clear ashen
+- cast with lego unequipped, then equip lego
+    - ashen has 30 sec duration
+    - running out gives CDR and clears ashen
+
+-- does ashen hallow clear on raid boss reset?
+]]
+
 -------------------------------------------------------------------------------
 -- init
 
@@ -26,6 +38,8 @@ aura_env.getState = function(allstates)
 end
 
 aura_env.cancelExpirationTimer = function()
+    -- Cancel the scheduled event that signals that Ashen Hallow expired.
+
     local timerHandle = singleState.ashenHallowExpirationHandle
     if timerHandle ~= nil then
         timerHandle:Cancel()
@@ -51,6 +65,9 @@ end
 
 function(allstates, event, ...)
     if event == "PLAYER_EQUIPMENT_CHANGED" then
+        -- Check whether the player has newly equipped or unequipped Radiant
+        -- Embers.
+
         local state = aura_env.getState(allstates)
 
         local wasWearingRadiantEmbers = state.wearingRadiantEmbers
@@ -71,6 +88,10 @@ function(allstates, event, ...)
         if sourceGuid ~= UnitGUID("player") or spellId ~= 316958 then
             return false
         end
+
+        -- The player has casted Ashen Hallow.  Update the progress and state
+        -- information, and set a timer to update the progress and state
+        -- information again to reflect that Ashen Hallow expired.
 
         local state = aura_env.getState(allstates)
 
@@ -110,6 +131,9 @@ function(allstates, event, ...)
         state.cooldownExpiration = newCooldownExpiration
         state.cooldownDuration = newCooldownDuration
 
+        -- Update the display only if the cooldown was reduced, which we take
+        -- as a signal that Ashen Hallow has been deactivated.
+
         if cooldownReduced then
             aura_env.cancelExpirationTimer()
 
@@ -145,6 +169,9 @@ function(allstates, event, ...)
             return false
         end
 
+        -- Assume that if the cooldown was reset, then the previously placed
+        -- Ashen Hallow has disappeared.
+
         aura_env.cancelExpirationTimer()
 
         local state = aura_env.getState(allstates)
@@ -162,6 +189,8 @@ function(allstates, event, ...)
 
         state.expirationTime = cooldownStart + cooldownDuration
         state.duration = cooldownDuration
+
+        -- For simplicity, assume that Ashen Hallow is not active.
 
         state.ashenHallowOnCooldown = (cooldownStart ~= 0)
         state.ashenHallowActive = false
