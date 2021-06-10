@@ -48,7 +48,7 @@ function aura_env.isDrinking(unit)
 end
 
 -------------------------------------------------------------------------------
--- TSU: PLAYER_ROLES_ASSIGNED, UNIT_POWER_UPDATE, UNIT_HEALTH, CHAT_MSG_ADDON, UNIT_AURA
+-- TSU: PLAYER_ROLES_ASSIGNED, UNIT_POWER_UPDATE, UNIT_DISPLAYPOWER, UNIT_HEALTH, CHAT_MSG_ADDON, UNIT_AURA
 
 function(allstates, event, ...)
     if event == "PLAYER_ROLES_ASSIGNED" then
@@ -88,7 +88,7 @@ function(allstates, event, ...)
         aura_env.nameToUnitMap = nameToUnitMap
 
         return true
-    elseif event == "UNIT_POWER_UPDATE" then
+    elseif event == "UNIT_POWER_UPDATE" or event == "UNIT_DISPLAYPOWER" then
         local unit, _ = ...
         local state = allstates[unit]
         if state == nil then
