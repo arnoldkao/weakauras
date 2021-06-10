@@ -47,6 +47,33 @@ function aura_env.isDrinking(unit)
     return false
 end
 
+function aura_env.raid20Members(skipRaid1)
+    -- Return a closure that iterates from 'raid1' through 'raid20'.  If
+    -- 'skipRaid1' is 'true', then return a closure that iterates instead from
+    -- 'raid2' through 'raid21'.
+
+    local i
+    local last
+
+    if skipRaid1 then
+        i = 2
+        last = 21
+    else
+        i = 1
+        last = 20
+    end
+
+    return function()
+        if i <= last then
+            local raidIndex = i
+            i = i + 1
+            return "raid" .. raidIndex
+        else
+            return nil
+        end
+    end
+end
+
 -------------------------------------------------------------------------------
 -- TSU: PLAYER_ROLES_ASSIGNED, UPDATE_INSTANCE_INFO, UNIT_POWER_UPDATE, UNIT_DISPLAYPOWER, UNIT_HEALTH, CHAT_MSG_ADDON, UNIT_AURA
 
@@ -64,19 +91,22 @@ function(allstates, event, ...)
         -- Limit the raid group iteration to the first 20 members if the player
         -- is in a mythic raid instance.
         --
-        -- TODO: Add smarts to stop at "raid22" instead of at "raid21" if
-        -- "raid1" is acting as the 21st raider.
+        -- 'raid1' is always the raid leader, regardless of group, whereas the
+        -- remaining 'raidN' members are ordered by group.  If 'raid1' is in a
+        -- group whose number is greater than that of 'raid21', then assume
+        -- that 'raid1' is acting as the "21st raider" and iterate from 'raid2'
+        -- through 'raid21'.  Otherwise, iterate from 'raid1' through 'raid20'.
 
-        local stopOnUnit = nil
-        if select(3, GetInstanceInfo()) == 16 then
-            stopOnUnit = "raid21"
+        local groupIterator = WA_IterateGroupMembers()
+        if select(3, GetInstanceInfo()) == 16 and UnitExists("raid21") then
+            local raid1Subgroup = select(3, GetRaidRosterInfo(1))
+            local raid21Subgroup = select(3, GetRaidRosterInfo(21))
+
+            local skipRaid1 = (raid1Subgroup > raid21Subgroup)
+            groupIterator = aura_env.raid20Members(skipRaid1)
         end
 
-        for unit in WA_IterateGroupMembers() do
-            if unit == stopOnUnit then
-                break
-            end
-
+        for unit in groupIterator do
             if UnitGroupRolesAssigned(unit) == "HEALER" then
                 local unitName, unitRealm = UnitName(unit)
                 if unitRealm == nil then
