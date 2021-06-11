@@ -113,7 +113,7 @@ function(allstates, event, ...)
                     unitRealm = aura_env.realmNameSuffix
                 end
 
-                local unitName = unitName .. "-" .. unitRealm
+                unitName = unitName .. "-" .. unitRealm
 
                 nameToUnitMap[unitName] = unit
 
