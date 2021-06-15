@@ -125,7 +125,9 @@ function(allstates, event, ...)
                     ["total"] = 100,
 
                     ["changed"] = true,
-                    ["value"] = aura_env.getManaPercentValue(unit)
+                    ["value"] = aura_env.getManaPercentValue(unit),
+                    ["dead"] = UnitIsDeadOrGhost(unit),
+                    ["drinking"] = aura_env.isDrinking(unit),
                 }
             end
         end
