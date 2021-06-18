@@ -15,6 +15,7 @@ aura_env.HEAL_TABLE = {
     [98008] = true, -- Spirit Link Totem
     [207778] = true, -- Downpour
     [320746] = true, -- Surge of Earth
+    [5394] = true, -- Healing Stream Totem
 }
 aura_env.DAMAGE_TABLE = {
     [51505] = true, -- Lava Burst
@@ -28,7 +29,8 @@ aura_env.DAMAGE_TABLE = {
     [210714] = true, -- Icefury
     [51490] = true, -- Thunderstorm
     [61882] = true, -- Earthquake
-    
+    [196840] = true, -- Frost Shock
+    [187874] = true, -- Crash Lightning
     [17364] = true, -- Stormstrike
     [60103] = true, -- Lava Lash
     [333974] = true, -- Fire Nova
