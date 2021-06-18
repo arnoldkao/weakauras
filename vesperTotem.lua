@@ -39,48 +39,75 @@ aura_env.damageSpells = {
 }
 
 -------------------------------------------------------------------------------
--- TSU: UNIT_SPELLCAST_SUCCEEDED:player
+-- TSU: UNIT_SPELLCAST_SUCCEEDED:player, PLAYER_TOTEM_UPDATE
 
-function(allstates, _, _, _, spellId)
+function(allstates, event, ...)
     local state = allstates[1]
 
-    if spellId == 324386 then   -- Vesper Totem
-        if state == nil then
-            state = {}
-            allstates[1] = state
-        end
+    if event == "UNIT_SPELLCAST_SUCCEEDED" then
+        local spellId = select(3, ...)
 
-        state.show = true
-        state.changed = true
-        state.progressType = "timed"
-        state.autoHide = true
-        state.expirationTime = GetTime() + 30
-        state.duration = 30
-
-        state.healingCharges = 3
-        state.damageCharges = 3
-
-        return true
-    elseif state ~= nil and state.show then
-        if aura_env.healingSpells[spellId] then
-            if state.healingCharges > 0 then
-                state.healingCharges = state.healingCharges - 1
-                state.changed = true
+        if spellId == 324386 then   -- Vesper Totem
+            if state == nil then
+                state = {}
+                allstates[1] = state
             end
-        elseif aura_env.damageSpells[spellId] then
-            if state.damageCharges > 0 then
-                state.damageCharges = state.damageCharges - 1
-                state.changed = true
-            end
-        end
 
-        if state.changed then
-            if state.healingCharges == 0 and state.damageCharges == 0 then
-                state.show = false
-            end
+            state.show = true
+            state.changed = true
+            state.progressType = "timed"
+            state.autoHide = true
+            state.expirationTime = GetTime() + 30
+            state.duration = 30
+
+            state.healingCharges = 3
+            state.damageCharges = 3
 
             return true
+        elseif state ~= nil and state.show then
+            if aura_env.healingSpells[spellId] then
+                if state.healingCharges > 0 then
+                    state.healingCharges = state.healingCharges - 1
+                    state.changed = true
+                end
+            elseif aura_env.damageSpells[spellId] then
+                if state.damageCharges > 0 then
+                    state.damageCharges = state.damageCharges - 1
+                    state.changed = true
+                end
+            end
+
+            if state.changed then
+                if state.healingCharges == 0 and state.damageCharges == 0 then
+                    state.show = false
+                end
+
+                return true
+            end
+
+            return false
         end
+    elseif event == "PLAYER_TOTEM_UPDATE" and state ~= nil and state.show then
+        -- Check for "PLAYER_TOTEM_UPDATE" in case the player cancels the
+        -- totem.
+
+        local vesperTotemName = GetSpellInfo(324386)
+
+        for i = 1, MAX_TOTEMS do
+            local _, totemName = GetTotemInfo(i)
+            if totemName == vesperTotemName then
+                -- Vesper Totem is still active.  Do nothing.
+
+                return false
+            end
+        end
+
+        -- Vesper Totem is inactive.  Disable the state.
+
+        state.show = false
+        state.changed = true
+
+        return true
     end
 end
 
