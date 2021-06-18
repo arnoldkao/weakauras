@@ -1,9 +1,7 @@
 -------------------------------------------------------------------------------
 -- init
 
-local VESPER_MAX_CHARGES = 3;
-local VESPER_SPELL_ID = 324386;
-local HEAL_TABLE = {
+aura_env.healingSpells = {
     [1064] = true, -- Chain Heal
     [61295] = true, -- Riptide
     [77472] = true, -- Healing Wave
@@ -18,7 +16,7 @@ local HEAL_TABLE = {
     [5394] = true, -- Healing Stream Totem
 }
 
-local DAMAGE_TABLE = {
+aura_env.damageSpells = {
     [51505] = true, -- Lava Burst
     [188196] = true, -- Lightning Bolt
     [188389] = true, -- Flame Shock
@@ -40,42 +38,59 @@ local DAMAGE_TABLE = {
     [188089] = true, -- Earthen Spike
 }
 
-aura_env.remainingHealCharges = 0
-aura_env.remainingDamageCharges = 0
+-------------------------------------------------------------------------------
+-- TSU: UNIT_SPELLCAST_SUCCEEDED:player
 
-aura_env.ProcessCast = function(spellId)
-    if spellId == VESPER_SPELL_ID then
-        aura_env.remainingHealCharges = VESPER_MAX_CHARGES
-        aura_env.remainingDamageCharges = VESPER_MAX_CHARGES
+function(allstates, _, _, _, spellId)
+    local state = allstates[1]
+
+    if spellId == 324386 then   -- Vesper Totem
+        if state == nil then
+            state = {}
+            allstates[1] = state
+        end
+
+        state.show = true
+        state.changed = true
+        state.progressType = "timed"
+        state.autoHide = true
+        state.expirationTime = GetTime() + 30
+        state.duration = 30
+
+        state.healingCharges = 3
+        state.damageCharges = 3
 
         return true
-    else
-        if HEAL_TABLE[spellId] then
-            if aura_env.remainingHealCharges > 0 then
-                aura_env.remainingHealCharges = aura_env.remainingHealCharges - 1
-                return true
+    elseif state ~= nil and state.show then
+        if aura_env.healingSpells[spellId] then
+            if state.healingCharges > 0 then
+                state.healingCharges = state.healingCharges - 1
+                state.changed = true
             end
-        elseif DAMAGE_TABLE[spellId] then
-            if aura_env.remainingDamageCharges > 0 then
-                aura_env.remainingDamageCharges = aura_env.remainingDamageCharges - 1
-                return true
+        elseif aura_env.damageSpells[spellId] then
+            if state.damageCharges > 0 then
+                state.damageCharges = state.damageCharges - 1
+                state.changed = true
             end
         end
 
-        return false
+        if state.changed then
+            if state.healingCharges == 0 and state.damageCharges == 0 then
+                state.show = false
+            end
+
+            return true
+        end
     end
 end
 
 -------------------------------------------------------------------------------
--- trigger: UNIT_SPELLCAST_SUCCEEDED:player
+-- Custom Variables
 
-function(event, unit, lineId, spellId)
-    return aura_env.ProcessCast(spellId);
-end
+{
+    ["expirationTime"] = true,
+    ["duration"] = true,
 
--------------------------------------------------------------------------------
--- custom text
-
-function()
-    return aura_env.remainingHealCharges, aura_env.remainingDamageCharges;
-end
+    ["healingCharges"] = "number",
+    ["damageCharges"] = "number",
+}
