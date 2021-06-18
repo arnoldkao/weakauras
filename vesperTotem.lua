@@ -54,9 +54,7 @@ aura_env.ResetVesper = function()
 end
 
 aura_env.ProcessCast = function(spellId)
-    aura_env.Log("ProcessCast(spellId): " .. spellId);
     if (spellId == aura_env.VESPER_SPELL_ID) then
-        aura_env.Log("ProcessCast: Vesper Cast!");
         aura_env.ResetVesper();
 
         return true
@@ -74,12 +72,6 @@ aura_env.ProcessCast = function(spellId)
         end
 
         return false
-    end
-end
-
-aura_env.Log = function(msg)
-    if (aura_env.config["debug_logging"] == true) then
-        print(msg);
     end
 end
 
