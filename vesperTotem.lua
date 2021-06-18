@@ -58,16 +58,22 @@ aura_env.ProcessCast = function(spellId)
     if (spellId == aura_env.VESPER_SPELL_ID) then
         aura_env.Log("ProcessCast: Vesper Cast!");
         aura_env.ResetVesper();
+
+        return true
     else
         if (aura_env.TableContainsSpell(aura_env.HEAL_TABLE, spellId)) then
             if (aura_env.remainingHealCharges > 0) then
                 aura_env.remainingHealCharges = aura_env.remainingHealCharges - 1;
+                return true
             end
         elseif (aura_env.TableContainsSpell(aura_env.DAMAGE_TABLE, spellId)) then
             if (aura_env.remainingDamageCharges > 0) then
                 aura_env.remainingDamageCharges = aura_env.remainingDamageCharges - 1;
+                return true
             end
         end
+
+        return false
     end
 end
 
@@ -80,13 +86,10 @@ end
 aura_env.ResetVesper();
 
 -------------------------------------------------------------------------------
--- trigger: UNIT_SPELLCAST_SUCCEEDED
+-- trigger: UNIT_SPELLCAST_SUCCEEDED:player
 
 function(event, unit, lineId, spellId)
-    if (event == "UNIT_SPELLCAST_SUCCEEDED") and (unit == "player") then
-        aura_env.ProcessCast(spellId);
-    end
-    return true
+    return aura_env.ProcessCast(spellId);
 end
 
 -------------------------------------------------------------------------------
