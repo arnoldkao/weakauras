@@ -1,9 +1,9 @@
 -------------------------------------------------------------------------------
 -- init
 
-aura_env.VESPER_MAX_CHARGES = 3;
-aura_env.VESPER_SPELL_ID = 324386;
-aura_env.HEAL_TABLE = {
+local VESPER_MAX_CHARGES = 3;
+local VESPER_SPELL_ID = 324386;
+local HEAL_TABLE = {
     [1064] = true, -- Chain Heal
     [61295] = true, -- Riptide
     [77472] = true, -- Healing Wave
@@ -17,7 +17,8 @@ aura_env.HEAL_TABLE = {
     [320746] = true, -- Surge of Earth
     [5394] = true, -- Healing Stream Totem
 }
-aura_env.DAMAGE_TABLE = {
+
+local DAMAGE_TABLE = {
     [51505] = true, -- Lava Burst
     [188196] = true, -- Lightning Bolt
     [188389] = true, -- Flame Shock
@@ -38,37 +39,25 @@ aura_env.DAMAGE_TABLE = {
     [197214] = true, -- Sundering
     [188089] = true, -- Earthen Spike
 }
-aura_env.remainingHealCharges = aura_env.VESPER_MAX_CHARGES;
-aura_env.remainingDamageCharges = aura_env.VESPER_MAX_CHARGES;
 
-aura_env.TableContainsSpell = function(t, spellId)
-    for id,enabled in pairs(t) do
-        if (id == spellId and enabled) then 
-            return true;
-        end
-    end
-    return false;
-end
-
-aura_env.ResetVesper = function()
-    aura_env.remainingHealCharges = aura_env.VESPER_MAX_CHARGES;
-    aura_env.remainingDamageCharges = aura_env.VESPER_MAX_CHARGES;
-end
+aura_env.remainingHealCharges = 0
+aura_env.remainingDamageCharges = 0
 
 aura_env.ProcessCast = function(spellId)
-    if (spellId == aura_env.VESPER_SPELL_ID) then
-        aura_env.ResetVesper();
+    if spellId == VESPER_SPELL_ID then
+        aura_env.remainingHealCharges = VESPER_MAX_CHARGES
+        aura_env.remainingDamageCharges = VESPER_MAX_CHARGES
 
         return true
     else
-        if (aura_env.TableContainsSpell(aura_env.HEAL_TABLE, spellId)) then
-            if (aura_env.remainingHealCharges > 0) then
-                aura_env.remainingHealCharges = aura_env.remainingHealCharges - 1;
+        if HEAL_TABLE[spellId] then
+            if aura_env.remainingHealCharges > 0 then
+                aura_env.remainingHealCharges = aura_env.remainingHealCharges - 1
                 return true
             end
-        elseif (aura_env.TableContainsSpell(aura_env.DAMAGE_TABLE, spellId)) then
-            if (aura_env.remainingDamageCharges > 0) then
-                aura_env.remainingDamageCharges = aura_env.remainingDamageCharges - 1;
+        elseif DAMAGE_TABLE[spellId] then
+            if aura_env.remainingDamageCharges > 0 then
+                aura_env.remainingDamageCharges = aura_env.remainingDamageCharges - 1
                 return true
             end
         end
@@ -76,8 +65,6 @@ aura_env.ProcessCast = function(spellId)
         return false
     end
 end
-
-aura_env.ResetVesper();
 
 -------------------------------------------------------------------------------
 -- trigger: UNIT_SPELLCAST_SUCCEEDED:player
