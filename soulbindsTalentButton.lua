@@ -4,13 +4,8 @@
 LoadAddOn("Blizzard_TalentUI")
 LoadAddOn("Blizzard_Soulbinds")
 
-local buttonName = 'WA_SoulbindsTalentWindowButton'
-
-if _G[buttonName] == nil then
-    local button = CreateFrame("Button",
-                               buttonName,
-                               aura_env.region,
-                               "SecureActionButtonTemplate")
+if aura_env.button == nil then
+    local button = CreateFrame("Button")
 
     local buttonScript = function()
         if SoulbindViewer:IsVisible() then
@@ -20,10 +15,18 @@ if _G[buttonName] == nil then
         end
     end
 
-    button:SetAllPoints()
     button:RegisterForClicks("LeftButtonDown", "RightButtonDown")
     button:SetScript("OnClick", buttonScript)
+
+    aura_env.button = button
 end
+
+-------------------------------------------------------------------------------
+-- show
+
+local button = aura_env.button
+button:SetParent(aura_env.region)
+button:SetAllPoints()
 
 -------------------------------------------------------------------------------
 -- trigger: SOULBIND_ACTIVATED, WA_SOULBINDSTALENTWINDOWBUTTON_DEFERRED
