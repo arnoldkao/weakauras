@@ -18,15 +18,11 @@ if aura_env.button == nil then
     button:RegisterForClicks("LeftButtonDown", "RightButtonDown")
     button:SetScript("OnClick", buttonScript)
 
+    button:SetParent(aura_env.region)
+    button:SetAllPoints()
+
     aura_env.button = button
 end
-
--------------------------------------------------------------------------------
--- show
-
-local button = aura_env.button
-button:SetParent(aura_env.region)
-button:SetAllPoints()
 
 -------------------------------------------------------------------------------
 -- trigger: SOULBIND_ACTIVATED, WA_SOULBINDSTALENTWINDOWBUTTON_DEFERRED
