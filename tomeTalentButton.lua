@@ -3,37 +3,18 @@
 
 LoadAddOn("Blizzard_TalentUI")
 
-local button
+if aura_env.button == nil then
+    local button = CreateFrame("Button",
+                               nil,
+                               nil,
+                               "SecureActionButtonTemplate")
 
-aura_env.tomeItemId = 173049
-
-aura_env.setMacroText = function()
-    local itemName = GetItemInfo(aura_env.tomeItemId)
-    if itemName ~= nil then
-        button:SetAttribute("macrotext", "/use " .. itemName)
-    end
-end
-
-local buttonName = 'WA_TomeTalentWindowButton'
-
-if _G[buttonName] == nil then
-    button = CreateFrame("Button",
-                         buttonName,
-                         aura_env.region,
-                         "SecureActionButtonTemplate")
-
-    button:SetAllPoints()
     button:RegisterForClicks("LeftButtonDown", "RightButtonDown")
-    button:SetAttribute("type", "macro")
+    button:SetAttribute("type", "item")
+    button:SetAttribute("item", "item:173049")
 
-    aura_env.setMacroText()
-end
+    button:SetParent(aura_env.region)
+    button:SetAllPoints()
 
--------------------------------------------------------------------------------
--- trigger: GET_ITEM_INFO_RECEIVED
-
-function(event, itemId, success)
-    if itemId == aura_env.tomeItemId and success then
-        aura_env.setMacroText()
-    end
+    aura_env.button = button
 end
