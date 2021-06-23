@@ -93,3 +93,12 @@ end
 
     ["dead"] = "bool"
 }
+
+-------------------------------------------------------------------------------
+-- On Show
+
+local parent = aura_env.region:GetParent()
+local dimension = math.min(parent:GetHeight(), parent:GetWidth())
+dimension = dimension * aura_env.config.scale
+aura_env.region:SetHeight(dimension)
+aura_env.region:SetWidth(dimension)
