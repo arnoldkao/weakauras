@@ -12,7 +12,9 @@ aura_env.nicknames = {
 }
 
 if not aura_env.installed then
-    print('Keystone Link Rename: registering chat event filter')
+    if aura_env.config.loginMessage then
+        print('Keystone Link Rename: registering chat event filter')
+    end
 
     aura_env.installed = true
 
