@@ -10,16 +10,23 @@ aura_env.customNames = {
     [382] = aura_env.config.theater
 }
 
--- trigger: BAG_UPDATE_DELAYED, CHALLENGE_MODE_START, CHALLENGE_MODE_COMPLETED, WA_DEFERRED_KEYSTONE_CHECK
-function(event)
-    if event == "CHALLENGE_MODE_COMPLETED" then
+-- trigger: BAG_UPDATE_DELAYED, CHALLENGE_MODE_START, CHALLENGE_MODE_COMPLETED, WA_DEFERRED_KEYSTONE_CHECK, ITEM_CHANGED, OPTIONS
+function(event, ...)
+    if event == "CHALLENGE_MODE_COMPLETED" or event == "ITEM_CHANGED" then
         -- The keystone changes after this event is fired. Schedule an update.
 
         C_Timer.After(1, function() WeakAuras.ScanEvents("WA_DEFERRED_KEYSTONE_CHECK") end)
         return false
     else
+        local previousKeystoneMapId = aura_env.keystoneMapId
+        local previousKeystoneLevel = aura_env.keystoneLevel
+
         aura_env.keystoneMapId = C_MythicPlus.GetOwnedKeystoneChallengeMapID()
-        return aura_env.keystoneMapId ~= nil
+        aura_env.keystoneLevel = C_MythicPlus.GetOwnedKeystoneLevel()
+
+        return (event == "OPTIONS"
+            or aura_env.keystoneMapId ~= previousKeystoneMapId
+            or aura_env.keystoneLevel ~= previousKeystoneLevel)
     end
 end
 
@@ -35,7 +42,7 @@ function()
         name = C_ChallengeMode.GetMapUIInfo(aura_env.keystoneMapId)
     end
 
-    return name .. " (" .. C_MythicPlus.GetOwnedKeystoneLevel() .. ")"
+    return name .. " (" .. aura_env.keystoneLevel .. ")"
 end
 
 -- icon
